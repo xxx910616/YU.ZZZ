@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YU.ZZZ 定價助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 全面改用 Sans-serif 系統字體 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans TC", sans-serif; 
+            background-color: #f0f9ff; 
+        }
+        
+        .bg-yu-blue { background-color: #f0f9ff; }
+        .bg-yu-yellow { background-color: #fefce8; }
+        
+        /* 隱藏輸入框箭頭 */
+        input::-webkit-outer-spin-button, 
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* 歷史紀錄展開動畫 */
+        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .history-card.expanded .detail-panel { max-height: 500px; }
+        .history-card.expanded .chevron { transform: rotate(180deg); }
+        
+        /* 彈窗樣式 */
+        #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; padding: 20px; }
+        #cameraModal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 24px; }
+        
+        .camera-card { width: 100%; max-width: 360px; background: white; border-radius: 40px; padding: 20px; }
+        #videoPreview { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 30px; background: #000; }
+        
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-once { animation: spin 0.5s ease-in-out; }
+
+        .weight-btn.active {
+            background-color: #fef08a !important; 
+            color: #000000 !important;
+            border-color: #fbbf24 !important; 
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-yu-blue min-h-screen">
+    <div class="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl text-black relative">
+        
+        <!-- 頂部數據看板 -->
+        <div class="p-6 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-sky-50">
+            <div class="flex justify-between items-end mb-4">
+                <div class="flex items-start gap-1">
+                    <h1 class="text-5xl font-black text-sky-950 italic tracking-tighter leading-none">YU.ZZZ</h1>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] text-sky-400 font-black uppercase tracking-widest">Total Profit</p>
+                    <p class="text-3xl font-black text-yellow-400 italic">$<span id="totalProfit">0</span></p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-[9px] text-slate-400 font-bold uppercase">Rate</p>
+                        <p id="updateTime" class="text-[8px] text-slate-300 font-mono">--:--</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p id="currentRateDisplay" class="text-lg font-mono font-bold text-sky-700 leading-none">0.0000</p>
+                        <button onclick="syncRates(this)" class="p-2 bg-amber-400 text-white rounded-xl active:scale-90 shadow-sm transition-transform">
+                            <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <p class="text-[9px] text-slate-400 font-bold mb-1 uppercase">Fee</p>
+                    <div class="flex items-center justify-center h-8">
+                        <p id="feeDisplay" class="text-lg font-black text-sky-600 leading-none">1.5%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 參數設定區域 -->
+        <div class="px-6 py-4 space-y-4 bg-yu-yellow/40 border-b border-yellow-100">
+            <div class="grid grid-cols-3 gap-2">
+                <div class="space-y-1 text-left">
+                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Currency</label>
+                    <select id="currency" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none shadow-sm text-black">
+                        <option value="KRW">KRW 🇰🇷</option>
+                        <option value="JPY">JPY 🇯🇵</option>
+                    </select>
+                </div>
+                <div class="space-y-1 text-left">
+                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Profit %</label>
+                    <input type="number" id="profitPercent" value="10" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none text-left shadow-sm text-black">
+                </div>
+                <div class="space-y-1 text-left">
+                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Personal costs</label>
+                    <input type="number" id="manualCost" value="0" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none text-left shadow-sm text-black">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Weight Range</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setWeight('0', this)" class="weight-btn active border p-3 rounded-2xl text-[10px] font-black bg-white transition-all">2kg 以下 (+0)</button>
+                    <button onclick="setWeight('2-5', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">2-5kg (+60)</button>
+                    <button onclick="setWeight('5-10', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">5-10kg (+100)</button>
+                    <button onclick="setWeight('10+', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">10kg+ (+150)</button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Product</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="itemName" placeholder="Product name..." class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-sm font-bold outline-none shadow-sm text-black">
+                        <button onclick="openCamera()" class="p-3 bg-sky-500 text-white rounded-xl active:scale-90 shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="photoPreviewContainer" class="hidden flex justify-center pt-2">
+                    <div class="relative group">
+                        <img id="photoPreviewImg" src="" class="w-32 h-32 object-cover rounded-2xl border-4 border-white shadow-lg">
+                        <button onclick="clearCapturedImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 價格輸入區域 -->
+        <div class="p-6 space-y-4">
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase font-black text-slate-400 italic block pl-4">Original PRICE</label>
+                <div class="relative">
+                    <input type="number" id="foreignPrice" placeholder="0" class="w-full p-6 pl-8 pr-24 text-6xl font-black rounded-[2.5rem] outline-none bg-white border-2 border-sky-100 text-sky-900 shadow-inner text-left tabular-nums">
+                    <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-slate-200 text-3xl italic">KRW</span>
+                </div>
+            </div>
+
+            <!-- 結果卡片 -->
+            <div id="quickResult" class="hidden animate-in fade-in zoom-in duration-300">
+                <div class="bg-sky-950 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest">Suggested Price</p>
+                            <p id="finalPrice" class="text-6xl font-black mt-1 tabular-nums">$ 0</p>
+                        </div>
+                        <div class="text-right space-y-2 mt-2">
+                            <p class="text-[10px] font-bold text-sky-300 italic flex items-center justify-end gap-1">
+                                EXTRA: <span id="resExtra">-$0</span>
+                            </p>
+                            <p class="text-[10px] font-bold text-emerald-400 italic flex items-center justify-end gap-1">
+                                Profit: <span id="resProfit">+$0</span>
+                            </p>
+                            <p class="text-[10px] font-bold text-slate-400 italic flex items-center justify-end gap-1">
+                                Original: <span id="resOriginal">+$0</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="saveToHistory()" class="w-full py-5 bg-yellow-400 hover:bg-yellow-300 text-sky-950 font-black text-xl rounded-2xl transition-all active:scale-95 uppercase tracking-widest">ADD LIST</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歷史清單 -->
+        <div class="bg-slate-50 p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 italic">
+                    <span class="w-4 h-1 bg-sky-300 rounded-full"></span> Shopping List
+                </h2>
+                <button onclick="exportToExcel()" class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-lg active:scale-95 border border-emerald-200">
+                    EXPORT EXCEL
+                </button>
+            </div>
+            <div id="historyList" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- 相機視窗 -->
+    <div id="cameraModal">
+        <div class="camera-card shadow-2xl text-center">
+            <h3 class="font-black text-sky-900 mb-4 text-xs uppercase tracking-widest italic">YU.ZZZ CAM</h3>
+            <video id="videoPreview" autoplay playsinline muted></video>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeCamera()" class="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl uppercase text-xs">Cancel</button>
+                <button onclick="takePhoto()" class="flex-[2] py-4 bg-sky-500 text-white font-black rounded-2xl shadow-lg uppercase text-xs">Take</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" onclick="this.style.display='none'">
+        <img id="fullImage" src="" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl">
+    </div>
+
+    <script>
+        let history = [];
+        let exchangeRates = { KRW: 0.0240, JPY: 0.210 };
+        let currentWeightTier = "0";
+        let capturedImageData = null;
+        let stream = null;
+
+        const taxRefundTable = [
+            { min: 30000, max: 49999, refund: 1500 },
+            { min: 50000, max: 74999, refund: 3000 },
+            { min: 75000, max: 99999, refund: 5000 },
+            { min: 100000, max: 124999, refund: 6000 },
+            { min: 125000, max: 149999, refund: 8000 },
+            { min: 150000, max: 174999, refund: 9000 },
+            { min: 175000, max: 199999, refund: 10000 },
+            { min: 200000, max: 224999, refund: 12000 },
+            { min: 225000, max: 249999, refund: 13000 },
+            { min: 250000, max: 274999, refund: 15000 },
+            { min: 275000, max: 299999, refund: 17000 },
+            { min: 300000, max: 499999, refund: 20000 },
+            { min: 500000, max: 999999, refund: 35000 }
+        ];
+
+        function getTaxRefund(foreignPrice) {
+            if (document.getElementById('currency').value !== 'KRW') return 0;
+            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
+            if (tier) return tier.refund;
+            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
+            return 0;
+        }
+
+        async function syncRates(btn) {
+            const icon = document.getElementById('syncIcon');
+            if (icon) icon.classList.add('animate-spin-once');
+            setTimeout(() => icon && icon.classList.remove('animate-spin-once'), 500);
+            try {
+                const res = await fetch('https://open.er-api.com/v6/latest/TWD');
+                const data = await res.json();
+                if (data.result === 'success') {
+                    exchangeRates.KRW = 1 / data.rates.KRW;
+                    exchangeRates.JPY = 1 / data.rates.JPY;
+                    document.getElementById('updateTime').innerText = `${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    update();
+                }
+            } catch (e) { console.error("Rate fetch failed"); }
+        }
+
+        function setWeight(tier, btn) {
+            currentWeightTier = tier;
+            document.querySelectorAll('.weight-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            update();
+        }
+
+        function update() {
+            const currency = document.getElementById('currency').value;
+            const bankRate = exchangeRates[currency];
+            const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
+            const foreignPrice = parseFloat(document.getElementById('foreignPrice').value) || 0;
+            const manualCostInput = parseFloat(document.getElementById('manualCost').value) || 0;
+            
+            let weightExtra = 0;
+            let feeRate = 0.015;
+
+            if (currentWeightTier === "2-5") weightExtra = 60;
+            else if (currentWeightTier === "5-10") weightExtra = 100;
+            else if (currentWeightTier === "10+") weightExtra = 150;
+
+            document.getElementById('feeDisplay').innerText = (feeRate * 100).toFixed(1) + '%';
+            document.getElementById('priceSuffix').innerText = currency;
+            document.getElementById('currentRateDisplay').innerText = bankRate.toFixed(4);
+
+            if (foreignPrice <= 0) {
+                document.getElementById('quickResult').classList.add('hidden');
+                return null;
+            }
+
+            document.getElementById('quickResult').classList.remove('hidden');
+
+            const rawTwdCost = (foreignPrice * bankRate);
+            const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
+            const finalPrice = Math.round(targetPrice);
+            const extraFee = Math.round(finalPrice * feeRate);
+            const refundKrw = getTaxRefund(foreignPrice);
+            const refundTwd = Math.round(refundKrw * bankRate);
+            const netProfit = finalPrice - rawTwdCost - extraFee - manualCostInput + refundTwd;
+
+            document.getElementById('resOriginal').innerText = `+$${Math.round(rawTwdCost).toLocaleString()}`;
+            document.getElementById('resExtra').innerText = `-$${extraFee.toLocaleString()}`;
+            document.getElementById('resProfit').innerText = `+$${Math.round(netProfit).toLocaleString()}`;
+            document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
+
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            return {
+                id: Date.now(),
+                timestamp: timestamp,
+                name: document.getElementById('itemName').value || 'New Item',
+                image: capturedImageData,
+                currency,
+                foreign: foreignPrice,
+                bankRate,
+                rawTwdCost: Math.round(rawTwdCost),
+                feeRate,
+                weightExtra,
+                refundTwd,
+                finalPrice: finalPrice,
+                extraFee: extraFee,
+                netProfit: netProfit,
+                manualCostInput
+            };
+        }
+
+        function saveToHistory() {
+            const data = update();
+            if (!data) return;
+            history.unshift(data);
+            render();
+            resetInput();
+        }
+
+        function resetInput() {
+            document.getElementById('foreignPrice').value = '';
+            document.getElementById('itemName').value = '';
+            clearCapturedImage();
+            document.getElementById('quickResult').classList.add('hidden');
+        }
+
+        function clearCapturedImage() {
+            capturedImageData = null;
+            document.getElementById('photoPreviewContainer').classList.add('hidden');
+            document.getElementById('photoPreviewImg').src = '';
+        }
+
+        function render() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            let totalProfit = 0;
+
+            history.forEach((item) => {
+                totalProfit += item.netProfit;
+                const el = document.createElement('div');
+                el.className = 'history-card bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden transition-all';
+                el.innerHTML = `
+                    <div class="p-4 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="chevron transition-transform text-slate-300">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4"></path></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <h3 class="font-black text-black truncate text-sm">${item.name}</h3>
+                                <p class="text-[9px] text-slate-400 font-mono">${item.foreign.toLocaleString()} ${item.currency} @ ${item.bankRate.toFixed(4)}</p>
+                                <p class="text-[8px] text-slate-300 font-mono mt-0.5">${item.timestamp}</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex items-center gap-4">
+                            <div>
+                                <p class="text-lg font-black text-sky-700 leading-none tabular-nums">$${item.finalPrice.toLocaleString()}</p>
+                                <p class="text-[9px] text-emerald-500 font-bold mt-1">PROFIT: +$${Math.round(item.netProfit).toLocaleString()}</p>
+                            </div>
+                            <button onclick="deleteItem(${item.id})" class="p-2 text-slate-200 hover:text-red-400 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-panel bg-slate-50 border-t border-slate-100">
+                        <div class="p-5 space-y-4">
+                            <div class="flex gap-4 items-start">
+                                ${item.image ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 rounded-2xl object-cover border-2 border-white shadow-md shrink-0">` : `<div class="w-24 h-24 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-400 shrink-0 text-[10px]">NO IMG</div>`}
+                                <div class="flex-grow space-y-2">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase italic">Update Product</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" value="${item.name}" id="edit-input-${item.id}" class="flex-grow p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm text-black">
+                                        <div class="flex gap-1 shrink-0 items-center">
+                                            <button onclick="updateName(${item.id})" class="text-emerald-500 active:scale-90 p-1">
+                                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4"></path></svg>
+                                            </button>
+                                            <button onclick="cancelUpdate(${item.id}, '${item.name}')" class="text-red-500 active:scale-90 p-1">
+                                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="4"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-xl border border-slate-100">
+                                    <p class="text-[8px] text-sky-600 font-bold mb-1 italic uppercase leading-tight">Original</p>
+                                    <p class="text-[10px] font-black text-sky-800">$${item.rawTwdCost.toLocaleString()}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-slate-100">
+                                    <p class="text-[8px] text-orange-400 font-bold mb-1 italic uppercase leading-tight">Fee (1.5%)</p>
+                                    <p class="text-[10px] font-black text-orange-600">-$${item.extraFee.toLocaleString()}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-slate-100">
+                                    <p class="text-[8px] text-pink-400 font-bold mb-1 italic uppercase leading-tight">Refund</p>
+                                    <p class="text-[10px] font-black text-pink-500">+$${item.refundTwd.toLocaleString()}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-emerald-100 ring-1 ring-emerald-50">
+                                    <p class="text-[8px] text-emerald-600 font-black mb-1 italic uppercase leading-tight">Net Profit</p>
+                                    <p class="text-[10px] font-black text-emerald-600">+$${Math.round(item.netProfit).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
+        }
+
+        function handleCardClick(event, el) {
+            if (event.target.closest('button') || event.target.closest('input')) return;
+            el.closest('.history-card').classList.toggle('expanded');
+        }
+
+        function updateName(id) {
+            const input = document.getElementById(`edit-input-${id}`);
+            const newName = input.value;
+            const idx = history.findIndex(i => i.id === id);
+            if (idx !== -1) {
+                history[idx].name = newName;
+                render();
+            }
+        }
+
+        function cancelUpdate(id, oldName) {
+            const input = document.getElementById(`edit-input-${id}`);
+            input.value = oldName;
+            document.getElementById(`edit-input-${id}`).closest('.history-card').classList.remove('expanded');
+        }
+
+        function deleteItem(id) { history = history.filter(i => i.id !== id); render(); }
+        function showBigImage(src) { document.getElementById('fullImage').src = src; document.getElementById('imageModal').style.display = 'flex'; }
+
+        async function openCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                document.getElementById('videoPreview').srcObject = stream;
+                document.getElementById('cameraModal').style.display = 'flex';
+            } catch (err) { alert("無法開啟相機，請檢查權限"); }
+        }
+
+        function closeCamera() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            document.getElementById('cameraModal').style.display = 'none';
+        }
+
+        function takePhoto() {
+            const video = document.getElementById('videoPreview');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+            document.getElementById('photoPreviewImg').src = capturedImageData;
+            document.getElementById('photoPreviewContainer').classList.remove('hidden');
+            closeCamera();
+            update();
+        }
+
+        function exportToExcel() {
+            if (history.length === 0) return;
+            const headers = ["Time", "Product", "Foreign Price", "Currency", "Exchange Rate", "TWD Cost", "Extra Fee", "Refund", "Personal Costs", "Suggested Price", "Net Profit"];
+            const rows = history.map(item => [
+                item.timestamp,
+                `"${item.name}"`,
+                item.foreign,
+                item.currency,
+                item.bankRate,
+                item.rawTwdCost,
+                -item.extraFee,
+                item.refundTwd,
+                item.manualCostInput,
+                item.finalPrice,
+                Math.round(item.netProfit)
+            ]);
+            
+            let csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `YU_ZZZ_List_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        ['profitPercent', 'foreignPrice', 'currency', 'itemName', 'manualCost'].forEach(id => {
+            document.getElementById(id).addEventListener('input', update);
+        });
+
+        // 啟動時自動同步匯率
+        window.onload = syncRates;
+    </script>
+</body>
+</html>
