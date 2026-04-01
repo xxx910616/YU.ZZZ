@@ -3,17 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YU.ZZZ OFFICIAL</title>
+    <title>YU.ZZZ 定價助手</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 全面改用 Sans-serif 系統字體 */
+        :root {
+            --soft-yellow: #FEF9E7;
+            --soft-blue: #EBF5FB;
+            --deep-black: #1A1A1A;
+            --pure-white: #FFFFFF;
+            --highlight-yellow: #FACC15;
+            --brand-blue-grey: #5b7189;
+        }
+
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans TC", sans-serif; 
-            background-color: #f0f9ff; 
+            background-color: var(--soft-yellow); 
+            color: var(--deep-black);
         }
         
-        .bg-yu-blue { background-color: #f0f9ff; }
-        .bg-yu-yellow { background-color: #fefce8; }
+        /* 財務顏色編碼定義 */
+        .color-extra { color: #EAB308; }     /* 深黃色 */
+        .color-original { color: #64748b; }  /* 藍灰色 */
+        .color-profit { color: #15803D; }    /* 深綠色 */
+        .color-taxback { color: #3B82F6; }   /* 藍色 */
+        .color-yellow-main { color: var(--highlight-yellow); }
+        .color-brand-custom { color: var(--brand-blue-grey); }
+
+        .bg-extra { background-color: #FACC15; }
+        .bg-original { background-color: #94A3B8; }
+        .bg-profit { background-color: #15803D; }
+        .bg-taxback { background-color: #60A5FA; }
+        .bg-brand-custom { background-color: var(--brand-blue-grey); }
         
         /* 隱藏輸入框箭頭 */
         input::-webkit-outer-spin-button, 
@@ -21,7 +41,7 @@
         
         /* 歷史紀錄展開動畫 */
         .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .history-card.expanded .detail-panel { max-height: 500px; }
+        .history-card.expanded .detail-panel { max-height: 600px; }
         .history-card.expanded .chevron { transform: rotate(180deg); }
         
         /* 彈窗樣式 */
@@ -34,94 +54,100 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-once { animation: spin 0.5s ease-in-out; }
 
+        /* 按鈕樣式微調 */
         .weight-btn.active {
-            background-color: #fef08a !important; 
-            color: #000000 !important;
-            border-color: #fbbf24 !important; 
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+            background-color: var(--brand-blue-grey) !important; 
+            color: var(--pure-white) !important;
+            border-color: var(--brand-blue-grey) !important;
+        }
+
+        .input-focus:focus {
+            ring: 2px solid var(--brand-blue-grey);
+            border-color: var(--brand-blue-grey);
         }
     </style>
 </head>
-<body class="bg-yu-blue min-h-screen">
-    <div class="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl text-black relative">
+<body class="min-h-screen">
+    <div class="max-w-md mx-auto min-h-screen bg-[var(--soft-yellow)] flex flex-col shadow-2xl relative">
         
         <!-- 頂部數據看板 -->
-        <div class="p-6 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-sky-50">
+        <div class="p-6 pb-6 bg-[var(--pure-white)] sticky top-0 z-20 shadow-sm border-b border-yellow-100 rounded-b-[2.5rem]">
             <div class="flex justify-between items-end mb-4">
                 <div class="flex items-start gap-1">
-                    <h1 class="text-5xl font-black text-sky-950 italic tracking-tighter leading-none">YU.ZZZ</h1>
+                    <h1 class="text-5xl font-black color-brand-custom italic tracking-tighter leading-none">YU.ZZZ</h1>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] text-sky-400 font-black uppercase tracking-widest">Total Profit</p>
-                    <p class="text-3xl font-black text-yellow-400 italic">$<span id="totalProfit">0</span></p>
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Profit</p>
+                    <p class="text-3xl font-black color-yellow-main italic">$<span id="totalProfit">0</span></p>
                 </div>
             </div>
             
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div class="bg-[var(--soft-blue)] p-3 rounded-2xl border border-blue-50">
                     <div class="flex justify-between items-start mb-1">
-                        <p class="text-[9px] text-slate-400 font-bold uppercase">Rate</p>
-                        <p id="updateTime" class="text-[8px] text-slate-300 font-mono">--:--</p>
+                        <p class="text-[9px] text-blue-400 font-bold uppercase">Exchange Rate</p>
+                        <p id="updateTime" class="text-[8px] text-blue-300 font-mono">--:--</p>
                     </div>
                     <div class="flex items-center justify-between">
-                        <p id="currentRateDisplay" class="text-lg font-mono font-bold text-sky-700 leading-none">0.0000</p>
-                        <button onclick="syncRates(this)" class="p-2 bg-amber-400 text-white rounded-xl active:scale-90 shadow-sm transition-transform">
+                        <p id="currentRateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0000</p>
+                        <button onclick="syncRates(this)" class="p-2 bg-white text-blue-600 rounded-xl active:scale-90 shadow-sm transition-transform border border-blue-100">
                             <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         </button>
                     </div>
                 </div>
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <p class="text-[9px] text-slate-400 font-bold mb-1 uppercase">Fee</p>
-                    <div class="flex items-center justify-center h-8">
-                        <p id="feeDisplay" class="text-lg font-black text-sky-600 leading-none">1.5%</p>
+                <div class="bg-[var(--soft-blue)] p-3 rounded-2xl border border-blue-50">
+                    <p class="text-[9px] text-blue-400 font-bold mb-1 uppercase">Bank Fee %</p>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="bankFeeInput" value="1.5" step="0.1" class="w-full bg-transparent text-lg font-black text-blue-900 leading-none outline-none focus:text-blue-600 transition-colors">
+                        <span class="text-lg font-black text-blue-900">%</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 參數設定區域 -->
-        <div class="px-6 py-4 space-y-4 bg-yu-yellow/40 border-b border-yellow-100">
-            <div class="grid grid-cols-3 gap-2">
-                <div class="space-y-1 text-left">
-                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Currency</label>
-                    <select id="currency" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none shadow-sm text-black">
+        <div class="px-6 py-6 space-y-5">
+            <div class="grid grid-cols-3 gap-3">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Currency</label>
+                    <select id="currency" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                         <option value="KRW">KRW 🇰🇷</option>
                         <option value="JPY">JPY 🇯🇵</option>
                     </select>
                 </div>
-                <div class="space-y-1 text-left">
-                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Profit %</label>
-                    <input type="number" id="profitPercent" value="10" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none text-left shadow-sm text-black">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Profit %</label>
+                    <input type="number" id="profitPercent" value="10" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
-                <div class="space-y-1 text-left">
-                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Personal costs</label>
-                    <input type="number" id="manualCost" value="0" class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-xs font-bold outline-none text-left shadow-sm text-black">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Extra cost</label>
+                    <input type="number" id="manualCost" value="0" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
             </div>
 
             <div class="space-y-2">
-                <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Weight Range</label>
+                <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Weight Range</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setWeight('0', this)" class="weight-btn active border p-3 rounded-2xl text-[10px] font-black bg-white transition-all">2kg 以下 (+0)</button>
-                    <button onclick="setWeight('2-5', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">2-5kg (+60)</button>
-                    <button onclick="setWeight('5-10', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">5-10kg (+100)</button>
-                    <button onclick="setWeight('10+', this)" class="weight-btn bg-white border border-yellow-200 p-3 rounded-2xl text-[10px] font-black text-black transition-all">10kg+ (+150)</button>
+                    <button onclick="setWeight('0', this)" data-label="2kg 以下" class="weight-btn active border p-3 rounded-2xl text-[10px] font-black bg-white transition-all shadow-sm">2kg 以下 (+0)</button>
+                    <button onclick="setWeight('2-5', this)" data-label="2-5kg" class="weight-btn bg-white border border-gray-200 p-3 rounded-2xl text-[10px] font-black transition-all shadow-sm">2-5kg (+60)</button>
+                    <button onclick="setWeight('5-10', this)" data-label="5-10kg" class="weight-btn bg-white border border-gray-200 p-3 rounded-2xl text-[10px] font-black transition-all shadow-sm">5-10kg (+100)</button>
+                    <button onclick="setWeight('10+', this)" data-label="10kg+" class="weight-btn bg-white border border-gray-200 p-3 rounded-2xl text-[10px] font-black transition-all shadow-sm">10kg+ (+150)</button>
                 </div>
             </div>
 
             <div class="space-y-2">
                 <div class="space-y-1">
-                    <label class="text-[9px] font-black text-sky-800 uppercase ml-1">Product</label>
+                    <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Product Info</label>
                     <div class="flex gap-2">
-                        <input type="text" id="itemName" placeholder="Product name..." class="w-full p-3 bg-white border border-yellow-200 rounded-xl text-sm font-bold outline-none shadow-sm text-black">
-                        <button onclick="openCamera()" class="p-3 bg-sky-500 text-white rounded-xl active:scale-90 shadow-md">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                        <input type="text" id="itemName" placeholder="產品名稱..." class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none shadow-sm">
+                        <button onclick="openCamera()" class="p-3 bg-brand-custom text-white rounded-xl active:scale-90 shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                         </button>
                     </div>
                 </div>
                 <div id="photoPreviewContainer" class="hidden flex justify-center pt-2">
-                    <div class="relative group">
-                        <img id="photoPreviewImg" src="" class="w-32 h-32 object-cover rounded-2xl border-4 border-white shadow-lg">
+                    <div class="relative">
+                        <img id="photoPreviewImg" src="" class="w-32 h-32 object-cover rounded-2xl border-4 border-white shadow-xl">
                         <button onclick="clearCapturedImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"></path></svg>
                         </button>
@@ -131,48 +157,48 @@
         </div>
 
         <!-- 價格輸入區域 -->
-        <div class="p-6 space-y-4">
+        <div class="px-6 pb-10 space-y-6">
             <div class="space-y-1">
-                <label class="text-[10px] uppercase font-black text-slate-400 italic block pl-4">Original PRICE</label>
+                <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-4">Local Original Price</label>
                 <div class="relative">
-                    <input type="number" id="foreignPrice" placeholder="0" class="w-full p-6 pl-8 pr-24 text-6xl font-black rounded-[2.5rem] outline-none bg-white border-2 border-sky-100 text-sky-900 shadow-inner text-left tabular-nums">
-                    <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-slate-200 text-3xl italic">KRW</span>
+                    <input type="number" id="foreignPrice" placeholder="0" class="w-full p-8 pl-8 pr-28 text-6xl font-black rounded-[2.5rem] outline-none bg-white border-2 border-yellow-100 color-original shadow-inner text-left tabular-nums">
+                    <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-gray-200 text-3xl italic">KRW</span>
                 </div>
             </div>
 
             <!-- 結果卡片 -->
             <div id="quickResult" class="hidden animate-in fade-in zoom-in duration-300">
-                <div class="bg-sky-950 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
+                <div class="bg-[var(--deep-black)] rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-start mb-6">
                         <div>
                             <p class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest">Suggested Price</p>
-                            <p id="finalPrice" class="text-6xl font-black mt-1 tabular-nums">$ 0</p>
+                            <p id="finalPrice" class="text-6xl font-black mt-1 tabular-nums text-white">$ 0</p>
                         </div>
                         <div class="text-right space-y-2 mt-2">
-                            <p class="text-[10px] font-bold text-sky-300 italic flex items-center justify-end gap-1">
-                                EXTRA: <span id="resExtra">-$0</span>
+                            <p class="text-[10px] font-bold text-red-400 italic flex items-center justify-end gap-1 uppercase">
+                                Fee: <span id="resExtra">-$0</span>
                             </p>
-                            <p class="text-[10px] font-bold text-emerald-400 italic flex items-center justify-end gap-1">
+                            <p class="text-[10px] font-bold text-green-400 italic flex items-center justify-end gap-1 uppercase">
                                 Profit: <span id="resProfit">+$0</span>
                             </p>
-                            <p class="text-[10px] font-bold text-slate-400 italic flex items-center justify-end gap-1">
-                                Original: <span id="resOriginal">+$0</span>
+                            <p class="text-[10px] font-bold color-original italic flex items-center justify-end gap-1 uppercase">
+                                Cost: <span id="resOriginal">+$0</span>
                             </p>
                         </div>
                     </div>
-                    <button onclick="saveToHistory()" class="w-full py-5 bg-yellow-400 hover:bg-yellow-300 text-sky-950 font-black text-xl rounded-2xl transition-all active:scale-95 uppercase tracking-widest">ADD LIST</button>
+                    <button onclick="saveToHistory()" class="w-full py-5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xl rounded-2xl transition-all active:scale-95 uppercase tracking-widest">ADD TO LIST</button>
                 </div>
             </div>
         </div>
 
         <!-- 歷史清單 -->
-        <div class="bg-slate-50 p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 italic">
-                    <span class="w-4 h-1 bg-sky-300 rounded-full"></span> Shopping List
+        <div class="bg-[var(--pure-white)] p-6 rounded-t-[3rem] flex-grow min-h-[400px] shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 italic">
+                    <span class="w-4 h-1 bg-yellow-400 rounded-full"></span> Shopping List
                 </h2>
-                <button onclick="exportToExcel()" class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-lg active:scale-95 border border-emerald-200">
-                    EXPORT EXCEL
+                <button onclick="exportToExcel()" class="px-4 py-2 bg-green-50 text-green-700 text-[10px] font-black rounded-xl active:scale-95 border border-green-100 shadow-sm">
+                    EXPORT CSV
                 </button>
             </div>
             <div id="historyList" class="space-y-4"></div>
@@ -182,11 +208,11 @@
     <!-- 相機視窗 -->
     <div id="cameraModal">
         <div class="camera-card shadow-2xl text-center">
-            <h3 class="font-black text-sky-900 mb-4 text-xs uppercase tracking-widest italic">YU.ZZZ CAM</h3>
+            <h3 class="font-black text-gray-900 mb-4 text-xs uppercase tracking-widest italic">YU.ZZZ SCANNER</h3>
             <video id="videoPreview" autoplay playsinline muted></video>
             <div class="flex gap-3 mt-6">
-                <button onclick="closeCamera()" class="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl uppercase text-xs">Cancel</button>
-                <button onclick="takePhoto()" class="flex-[2] py-4 bg-sky-500 text-white font-black rounded-2xl shadow-lg uppercase text-xs">Take</button>
+                <button onclick="closeCamera()" class="flex-1 py-4 bg-gray-100 text-gray-500 font-bold rounded-2xl uppercase text-xs">Cancel</button>
+                <button onclick="takePhoto()" class="flex-[2] py-4 bg-brand-custom text-white font-black rounded-2xl shadow-lg uppercase text-xs">Capture</button>
             </div>
         </div>
     </div>
@@ -199,6 +225,7 @@
         let history = [];
         let exchangeRates = { KRW: 0.0240, JPY: 0.210 };
         let currentWeightTier = "0";
+        let currentWeightLabel = "2kg 以下";
         let capturedImageData = null;
         let stream = null;
 
@@ -244,6 +271,7 @@
 
         function setWeight(tier, btn) {
             currentWeightTier = tier;
+            currentWeightLabel = btn.getAttribute('data-label');
             document.querySelectorAll('.weight-btn').forEach(b => {
                 b.classList.remove('active');
             });
@@ -257,15 +285,14 @@
             const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
             const foreignPrice = parseFloat(document.getElementById('foreignPrice').value) || 0;
             const manualCostInput = parseFloat(document.getElementById('manualCost').value) || 0;
+            const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
             
             let weightExtra = 0;
-            let feeRate = 0.015;
 
             if (currentWeightTier === "2-5") weightExtra = 60;
             else if (currentWeightTier === "5-10") weightExtra = 100;
             else if (currentWeightTier === "10+") weightExtra = 150;
 
-            document.getElementById('feeDisplay').innerText = (feeRate * 100).toFixed(1) + '%';
             document.getElementById('priceSuffix').innerText = currency;
             document.getElementById('currentRateDisplay').innerText = bankRate.toFixed(4);
 
@@ -295,7 +322,7 @@
             return {
                 id: Date.now(),
                 timestamp: timestamp,
-                name: document.getElementById('itemName').value || 'New Item',
+                name: document.getElementById('itemName').value || '未命名產品',
                 image: capturedImageData,
                 currency,
                 foreign: foreignPrice,
@@ -303,6 +330,7 @@
                 rawTwdCost: Math.round(rawTwdCost),
                 feeRate,
                 weightExtra,
+                weightLabel: currentWeightLabel,
                 refundTwd,
                 finalPrice: finalPrice,
                 extraFee: extraFee,
@@ -340,65 +368,71 @@
             history.forEach((item) => {
                 totalProfit += item.netProfit;
                 const el = document.createElement('div');
-                el.className = 'history-card bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden transition-all';
+                el.className = 'history-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden transition-all';
                 el.innerHTML = `
-                    <div class="p-4 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="chevron transition-transform text-slate-300">
+                    <div class="p-5 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="chevron transition-transform text-gray-300">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4"></path></svg>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-black text-black truncate text-sm">${item.name}</h3>
-                                <p class="text-[9px] text-slate-400 font-mono">${item.foreign.toLocaleString()} ${item.currency} @ ${item.bankRate.toFixed(4)}</p>
-                                <p class="text-[8px] text-slate-300 font-mono mt-0.5">${item.timestamp}</p>
+                                <h3 class="font-black text-black truncate text-sm uppercase tracking-tight">${item.name}</h3>
+                                <p class="text-[9px] font-mono font-bold text-blue-500">${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}</p>
+                                <p class="text-[8px] text-gray-300 font-mono mt-0.5">${item.timestamp}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-4">
                             <div>
-                                <p class="text-lg font-black text-sky-700 leading-none tabular-nums">$${item.finalPrice.toLocaleString()}</p>
-                                <p class="text-[9px] text-emerald-500 font-bold mt-1">PROFIT: +$${Math.round(item.netProfit).toLocaleString()}</p>
+                                <p class="text-lg font-black text-gray-900 leading-none tabular-nums">$${item.finalPrice.toLocaleString()}</p>
+                                <p class="text-[9px] color-profit font-black mt-1">+$${Math.round(item.netProfit).toLocaleString()}</p>
                             </div>
-                            <button onclick="deleteItem(${item.id})" class="p-2 text-slate-200 hover:text-red-400 transition-colors">
+                            <button onclick="deleteItem(${item.id})" class="p-2 text-gray-200 hover:text-red-400 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"></path></svg>
                             </button>
                         </div>
                     </div>
                     
-                    <div class="detail-panel bg-slate-50 border-t border-slate-100">
-                        <div class="p-5 space-y-4">
+                    <div class="detail-panel bg-[var(--soft-blue)]/30 border-t border-blue-50">
+                        <div class="p-6 space-y-5">
                             <div class="flex gap-4 items-start">
-                                ${item.image ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 rounded-2xl object-cover border-2 border-white shadow-md shrink-0">` : `<div class="w-24 h-24 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-400 shrink-0 text-[10px]">NO IMG</div>`}
-                                <div class="flex-grow space-y-2">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase italic">Update Product</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" value="${item.name}" id="edit-input-${item.id}" class="flex-grow p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm text-black">
-                                        <div class="flex gap-1 shrink-0 items-center">
-                                            <button onclick="updateName(${item.id})" class="text-emerald-500 active:scale-90 p-1">
-                                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4"></path></svg>
-                                            </button>
-                                            <button onclick="cancelUpdate(${item.id}, '${item.name}')" class="text-red-500 active:scale-90 p-1">
-                                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="4"></path></svg>
-                                            </button>
+                                ${item.image ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg shrink-0">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-blue-100 flex items-center justify-center text-blue-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
+                                <div class="flex-grow space-y-3">
+                                    <div class="space-y-1">
+                                        <label class="text-[9px] font-black text-blue-400 uppercase tracking-widest italic">Product Name</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" value="${item.name}" id="edit-input-${item.id}" class="flex-grow p-3 bg-white border border-blue-100 rounded-xl text-xs font-bold outline-none shadow-sm text-black">
+                                            <div class="flex gap-1 shrink-0 items-center">
+                                                <button onclick="updateName(${item.id})" class="text-green-500 active:scale-90 p-1">
+                                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4"></path></svg>
+                                                </button>
+                                                <button onclick="cancelUpdate(${item.id}, '${item.name}')" class="text-red-400 active:scale-90 p-1">
+                                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="4"></path></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-4 gap-2 text-center">
-                                <div class="bg-white p-2 rounded-xl border border-slate-100">
-                                    <p class="text-[8px] text-sky-600 font-bold mb-1 italic uppercase leading-tight">Original</p>
-                                    <p class="text-[10px] font-black text-sky-800">$${item.rawTwdCost.toLocaleString()}</p>
+                            <div class="grid grid-cols-5 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-xl border border-blue-50 shadow-sm">
+                                    <p class="text-[8px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">Cost</p>
+                                    <p class="text-[10px] font-black text-gray-700">$${item.rawTwdCost.toLocaleString()}</p>
                                 </div>
-                                <div class="bg-white p-2 rounded-xl border border-slate-100">
-                                    <p class="text-[8px] text-orange-400 font-bold mb-1 italic uppercase leading-tight">Fee (1.5%)</p>
-                                    <p class="text-[10px] font-black text-orange-600">-$${item.extraFee.toLocaleString()}</p>
+                                <div class="bg-white p-2 rounded-xl border border-blue-50 shadow-sm">
+                                    <p class="text-[8px] text-red-300 font-bold mb-1 uppercase tracking-tighter">Fees</p>
+                                    <p class="text-[10px] font-black text-red-400">-$${item.extraFee.toLocaleString()}</p>
                                 </div>
-                                <div class="bg-white p-2 rounded-xl border border-slate-100">
-                                    <p class="text-[8px] text-pink-400 font-bold mb-1 italic uppercase leading-tight">Refund</p>
-                                    <p class="text-[10px] font-black text-pink-500">+$${item.refundTwd.toLocaleString()}</p>
+                                <div class="bg-white p-2 rounded-xl border border-blue-50 shadow-sm">
+                                    <p class="text-[8px] text-blue-300 font-bold mb-1 uppercase tracking-tighter">Refund</p>
+                                    <p class="text-[10px] font-black text-blue-400">+$${item.refundTwd.toLocaleString()}</p>
                                 </div>
-                                <div class="bg-white p-2 rounded-xl border border-emerald-100 ring-1 ring-emerald-50">
-                                    <p class="text-[8px] text-emerald-600 font-black mb-1 italic uppercase leading-tight">Net Profit</p>
-                                    <p class="text-[10px] font-black text-emerald-600">+$${Math.round(item.netProfit).toLocaleString()}</p>
+                                <div class="bg-white p-2 rounded-xl border border-blue-50 shadow-sm">
+                                    <p class="text-[8px] text-orange-300 font-bold mb-1 uppercase tracking-tighter">Weight</p>
+                                    <p class="text-[9px] font-black text-orange-500">${item.weightLabel}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-green-100 shadow-sm ring-1 ring-green-50">
+                                    <p class="text-[8px] text-green-400 font-black mb-1 uppercase tracking-tighter">Profit</p>
+                                    <p class="text-[10px] font-black text-green-600">+$${Math.round(item.netProfit).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -438,7 +472,13 @@
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 document.getElementById('videoPreview').srcObject = stream;
                 document.getElementById('cameraModal').style.display = 'flex';
-            } catch (err) { alert("無法開啟相機，請檢查權限"); }
+            } catch (err) { 
+                const msg = document.createElement('div');
+                msg.className = "fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full z-[300]";
+                msg.innerText = "相機權限受限";
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 2000);
+            }
         }
 
         function closeCamera() {
@@ -460,7 +500,7 @@
 
         function exportToExcel() {
             if (history.length === 0) return;
-            const headers = ["Time", "Product", "Foreign Price", "Currency", "Exchange Rate", "TWD Cost", "Extra Fee", "Refund", "Personal Costs", "Suggested Price", "Net Profit"];
+            const headers = ["Time", "Product", "Foreign Price", "Currency", "Exchange Rate", "TWD Cost", "Extra Fee", "Refund", "Weight Tier", "Personal Costs", "Suggested Price", "Net Profit"];
             const rows = history.map(item => [
                 item.timestamp,
                 `"${item.name}"`,
@@ -470,6 +510,7 @@
                 item.rawTwdCost,
                 -item.extraFee,
                 item.refundTwd,
+                item.weightLabel,
                 item.manualCostInput,
                 item.finalPrice,
                 Math.round(item.netProfit)
@@ -487,11 +528,10 @@
             document.body.removeChild(link);
         }
 
-        ['profitPercent', 'foreignPrice', 'currency', 'itemName', 'manualCost'].forEach(id => {
+        ['profitPercent', 'foreignPrice', 'currency', 'itemName', 'manualCost', 'bankFeeInput'].forEach(id => {
             document.getElementById(id).addEventListener('input', update);
         });
 
-        // 啟動時自動同步匯率
         window.onload = syncRates;
     </script>
 </body>
