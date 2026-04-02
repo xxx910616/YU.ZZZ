@@ -12,7 +12,7 @@
             --deep-black: #1A1A1A;
             --pure-white: #FFFFFF;
             --highlight-yellow: #FACC15;
-            --list-yellow: #FFFDF5; 
+            --list-yellow: #FFFBEB; 
             --brand-blue-grey: #5b7189;
         }
 
@@ -30,8 +30,8 @@
         input::-webkit-outer-spin-button, 
         input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .history-card.expanded .detail-panel { max-height: 1000px; }
+        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .history-card.expanded .detail-panel { max-height: 800px; }
         .history-card.expanded .chevron { transform: rotate(180deg); }
         
         .weight-btn.active {
@@ -39,10 +39,24 @@
             color: var(--pure-white) !important;
             border-color: var(--brand-blue-grey) !important;
         }
+        
+        .stat-box {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            height: 64px; 
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #fef3c7;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
 
         .list-container {
             background-color: var(--list-yellow);
             border-top: 1px solid #FEF3C7;
+            box-shadow: 0 -10px 25px -5px rgba(251, 191, 36, 0.1);
         }
 
         #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; padding: 20px; }
@@ -58,37 +72,17 @@
         #searchHistory:not(:placeholder-shown) + .clear-search-btn {
             display: block;
         }
-
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: white;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s;
-        }
-
-        .img-box { border-radius: 1.8rem; }
-        .stat-card { border-radius: 1.5rem; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #FFF9E5; background: white; }
-        .stat-card.profit { background-color: #f0fdf4; border-color: #dcfce7; }
     </style>
 </head>
-<body class="min-h-screen text-slate-800">
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent"></div>
-        <p class="mt-4 font-black text-gray-400 tracking-widest text-xs uppercase">Connecting to YU.ZZZ Cloud...</p>
-    </div>
-
+<body class="min-h-screen">
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
-        <!-- Header Section -->
+        
+        <!-- 頂部數據看板 -->
         <div class="p-6 pb-8 bg-[var(--pure-white)] sticky top-0 z-20 shadow-sm border-b border-gray-100 rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
                     <h1 class="text-5xl font-black color-brand-custom italic tracking-tighter leading-none">YU.ZZZ</h1>
-                    <span class="text-[10px] font-black text-black tracking-[0.2em] mt-1 ml-1 uppercase">Official | 2002</span>
+                    <span class="text-[10px] font-black text-black tracking-[0.3em] mt-1 ml-1 uppercase">Official</span>
                 </div>
                 <div class="text-right flex flex-col justify-center">
                     <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">Total Profit</p>
@@ -102,7 +96,7 @@
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col">
                             <p id="currentRateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0000</p>
-                            <p id="updateTime" class="text-[8px] text-blue-300 font-mono mt-1">UPDATE: --:--</p>
+                            <p id="updateTime" class="text-[8px] text-blue-300 font-mono mt-1">--:--</p>
                         </div>
                         <button onclick="syncRates(this)" class="p-2 bg-white text-blue-600 rounded-xl active:scale-90 shadow-sm border border-blue-100">
                             <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -112,40 +106,40 @@
                 <div class="bg-[var(--soft-blue)] p-3 rounded-2xl border border-blue-50">
                     <p class="text-[9px] text-blue-400 font-bold mb-1 uppercase">Bank Fee %</p>
                     <div class="flex items-center gap-1">
-                        <input type="number" id="bankFeeInput" value="1.5" step="0.1" onchange="update()" class="w-full bg-transparent text-lg font-black text-blue-900 leading-none outline-none">
+                        <input type="number" id="bankFeeInput" value="1.5" step="0.1" class="w-full bg-transparent text-lg font-black text-blue-900 leading-none outline-none">
                         <span class="text-lg font-black text-blue-900">%</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Input Section -->
+        <!-- 輸入區域 -->
         <div class="px-6 py-5 space-y-5">
             <div class="grid grid-cols-3 gap-2.5">
                 <div class="space-y-1">
                     <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Currency</label>
-                    <select id="currency" onchange="update()" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm appearance-none">
+                    <select id="currency" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm appearance-none">
                         <option value="KRW">KRW 🇰🇷</option>
                         <option value="JPY">JPY 🇯🇵</option>
                     </select>
                 </div>
                 <div class="space-y-1">
                     <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Profit %</label>
-                    <input type="number" id="profitPercent" value="10" oninput="update()" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
+                    <input type="number" id="profitPercent" value="10" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
                 <div class="space-y-1">
                     <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Extra cost</label>
-                    <input type="number" id="manualCost" value="0" oninput="update()" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
+                    <input type="number" id="manualCost" value="0" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
             </div>
 
             <div class="space-y-2">
                 <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Weight Range</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setWeight('0', this)" data-label="2KG 以下" class="weight-btn active border bg-white p-3 rounded-xl text-[10px] font-black shadow-sm">2KG 以下 (+0)</button>
-                    <button onclick="setWeight('2-5', this)" data-label="2-5KG" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">2-5KG (+60)</button>
-                    <button onclick="setWeight('5-10', this)" data-label="5-10KG" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">5-10KG (+100)</button>
-                    <button onclick="setWeight('10+', this)" data-label="10KG+" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">10KG+ (+150)</button>
+                    <button onclick="setWeight('0', this)" data-label="2kg 以下" class="weight-btn active border bg-white p-3 rounded-xl text-[10px] font-black shadow-sm">2kg 以下 (+0)</button>
+                    <button onclick="setWeight('2-5', this)" data-label="2-5kg" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">2-5kg (+60)</button>
+                    <button onclick="setWeight('5-10', this)" data-label="5-10kg" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">5-10kg (+100)</button>
+                    <button onclick="setWeight('10+', this)" data-label="10kg+" class="weight-btn bg-white border border-gray-200 p-3 rounded-xl text-[10px] font-black shadow-sm">10kg+ (+150)</button>
                 </div>
             </div>
 
@@ -169,12 +163,12 @@
             </div>
         </div>
 
-        <!-- Result Card -->
+        <!-- 價格區 -->
         <div class="px-6 pb-8 space-y-5">
             <div class="space-y-1">
                 <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
                 <div class="relative">
-                    <input type="number" id="foreignPrice" oninput="update()" placeholder="0" class="w-full p-6 pl-8 pr-24 text-5xl font-black rounded-[2rem] outline-none bg-white border border-gray-200 shadow-inner text-left tabular-nums text-gray-500">
+                    <input type="number" id="foreignPrice" placeholder="0" class="w-full p-6 pl-8 pr-24 text-5xl font-black rounded-[2rem] outline-none bg-white border border-gray-200 shadow-inner text-left tabular-nums text-gray-500">
                     <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-gray-200 text-2xl italic uppercase pointer-events-none">KRW</span>
                 </div>
             </div>
@@ -192,12 +186,12 @@
                             <p class="text-[10px] font-bold text-gray-400 italic flex items-center justify-end gap-1 uppercase">Cost: <span id="resOriginal">+$0</span></p>
                         </div>
                     </div>
-                    <button onclick="saveToHistory()" id="addButton" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
+                    <button onclick="saveToHistory()" class="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
                 </div>
             </div>
         </div>
 
-        <!-- History List -->
+        <!-- 歷史清單 -->
         <div class="list-container p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
             <div class="flex items-center gap-3 mb-6 px-1">
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -218,6 +212,7 @@
 
             <div id="historyList" class="space-y-4"></div>
 
+            <!-- 頁尾宣告 -->
             <div class="mt-12 mb-4 text-center">
                 <p class="text-[10px] font-bold text-amber-900/20 tracking-[0.4em] uppercase">Y U . Z Z Z ™</p>
             </div>
@@ -228,23 +223,12 @@
         <img id="fullImage" src="" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl">
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'yu-zzz-assistant';
-
+    <script>
         let history = [];
-        let exchangeRates = { KRW: 0.0245, JPY: 0.215 };
+        let exchangeRates = { KRW: 0.0240, JPY: 0.210 };
         let currentWeightTier = "0";
-        let currentWeightLabel = "2KG 以下";
+        let currentWeightLabel = "2kg 以下";
         let capturedImageData = null;
-        let currentUser = null;
 
         const taxRefundTable = [
             { min: 30000, max: 49999, refund: 1500 },
@@ -262,68 +246,39 @@
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                startSync();
-                document.getElementById('loadingOverlay').style.opacity = '0';
-                setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
-            } else {
-                initAuth();
-            }
-        });
-
-        function startSync() {
-            const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-            onSnapshot(historyRef, (snapshot) => {
-                history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => b.timestamp_raw - a.timestamp_raw);
-                render();
-            }, (error) => console.error("Firestore error:", error));
+        function getTaxRefund(foreignPrice) {
+            if (document.getElementById('currency').value !== 'KRW') return 0;
+            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
+            if (tier) return tier.refund;
+            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
+            return 0;
         }
 
-        window.syncRates = async function(btn) {
+        async function syncRates(btn) {
             const icon = document.getElementById('syncIcon');
-            icon?.classList.add('animate-spin');
+            if (icon) icon.classList.add('animate-spin');
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/TWD');
                 const data = await res.json();
                 if (data.result === 'success') {
                     exchangeRates.KRW = 1 / data.rates.KRW;
                     exchangeRates.JPY = 1 / data.rates.JPY;
-                    const now = new Date();
-                    document.getElementById('updateTime').innerText = `UPDATE: ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    document.getElementById('updateTime').innerText = `下午${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                     update();
                 }
-            } catch (e) { console.error("Rate fetch failed", e); }
-            setTimeout(() => icon?.classList.remove('animate-spin'), 600);
-        };
+            } catch (e) { console.error("Rate fetch failed"); }
+            setTimeout(() => icon && icon.classList.remove('animate-spin'), 600);
+        }
 
-        window.setWeight = function(tier, btn) {
+        function setWeight(tier, btn) {
             currentWeightTier = tier;
             currentWeightLabel = btn.getAttribute('data-label');
             document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             update();
-        };
-
-        function getTaxRefund(foreignPrice) {
-            if (document.getElementById('currency').value !== 'KRW') return 0;
-            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
-            if (tier) return tier.refund;
-            if (foreignPrice >= 1000000) return Math.floor(foreignPrice * 0.06);
-            return 0;
         }
 
-        window.update = function() {
+        function update() {
             const currency = document.getElementById('currency').value;
             const bankRate = exchangeRates[currency];
             const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
@@ -346,7 +301,7 @@
 
             document.getElementById('quickResult').classList.remove('hidden');
 
-            const rawTwdCost = foreignPrice * bankRate;
+            const rawTwdCost = (foreignPrice * bankRate);
             const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
             const finalPrice = Math.round(targetPrice);
             const extraFee = Math.round(finalPrice * feeRate);
@@ -360,11 +315,14 @@
             document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
 
             const now = new Date();
+            const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
             return {
-                timestamp_raw: Date.now(),
-                timestamp: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
-                date: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
-                time: `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
+                id: Date.now(),
+                timestamp: `${dateStr} ${timeStr}`,
+                date: dateStr,
+                time: timeStr,
                 name: document.getElementById('itemName').value || '未命名產品',
                 image: capturedImageData,
                 currency,
@@ -375,19 +333,19 @@
                 weightExtra,
                 weightLabel: currentWeightLabel,
                 refundTwd,
-                finalPrice,
-                extraFee,
-                netProfit: Math.round(netProfit),
+                finalPrice: finalPrice,
+                extraFee: extraFee,
+                netProfit: netProfit,
                 manualCostInput
             };
-        };
+        }
 
-        window.triggerCamera = () => document.getElementById('hiddenCameraInput').click();
-        window.handleCameraPhoto = (input) => {
+        function triggerCamera() { document.getElementById('hiddenCameraInput').click(); }
+        function handleCameraPhoto(input) {
             const file = input.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = function(e) {
                 capturedImageData = e.target.result;
                 document.getElementById('photoPreviewImg').src = capturedImageData;
                 document.getElementById('photoPreviewContainer').classList.remove('hidden');
@@ -395,188 +353,175 @@
             };
             reader.readAsDataURL(file);
             input.value = "";
-        };
-        window.clearCapturedImage = () => {
+        }
+
+        function clearCapturedImage() {
             capturedImageData = null;
             document.getElementById('photoPreviewContainer').classList.add('hidden');
-        };
+            document.getElementById('photoPreviewImg').src = '';
+        }
 
-        window.saveToHistory = async () => {
-            if (!currentUser) return;
+        function saveToHistory() {
             const data = update();
             if (!data) return;
-            const btn = document.getElementById('addButton');
-            btn.disabled = true;
-            btn.innerText = "SAVING...";
-            try {
-                const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-                await addDoc(historyRef, data);
-                document.getElementById('foreignPrice').value = '';
-                document.getElementById('itemName').value = '';
-                clearCapturedImage();
-                document.getElementById('quickResult').classList.add('hidden');
-            } catch (e) { console.error("Save error", e); }
-            btn.disabled = false;
-            btn.innerText = "ADD TO LIST";
-        };
+            history.unshift(data);
+            render();
+            resetInput();
+        }
 
-        window.deleteItem = async (id) => {
-            if (!currentUser) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
-            } catch (e) { console.error("Delete failed", e); }
-        };
+        function resetInput() {
+            document.getElementById('foreignPrice').value = '';
+            document.getElementById('itemName').value = '';
+            clearCapturedImage();
+            document.getElementById('quickResult').classList.add('hidden');
+        }
 
-        window.toggleEdit = (id) => {
-            const d = document.getElementById(`name-display-${id}`);
-            const e = document.getElementById(`name-edit-${id}`);
-            d.classList.toggle('hidden');
-            e.classList.toggle('hidden');
-            if (!e.classList.contains('hidden')) e.querySelector('input').focus();
-        };
-
-        window.updateName = async (id) => {
-            const input = document.getElementById(`edit-input-${id}`);
-            const newName = input.value || "未命名產品";
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id), { name: newName });
-            } catch (e) { console.error("Update failed", e); }
-        };
-
-        window.handleCardClick = (e, el) => {
-            if (e.target.closest('button') || e.target.closest('input')) return;
-            el.closest('.history-card').classList.toggle('expanded');
-        };
-
-        window.showBigImage = (src) => {
-            document.getElementById('fullImage').src = src;
-            document.getElementById('imageModal').style.display = 'flex';
-        };
-
-        window.clearSearch = () => {
+        function clearSearch() {
             document.getElementById('searchHistory').value = '';
             render();
-        };
+        }
 
-        window.exportToExcel = () => {
-            if (history.length === 0) return;
-            const headers = ["Time", "Name", "Foreign", "Curr", "Rate", "Final", "Profit"];
-            const rows = history.map(i => [i.timestamp, `"${i.name}"`, i.foreign, i.currency, i.bankRate, i.finalPrice, i.netProfit]);
-            const csv = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `YU_ZZZ_Export.csv`;
-            a.click();
-        };
+        function toggleEdit(id) {
+            const displayEl = document.getElementById(`name-display-${id}`);
+            const editEl = document.getElementById(`name-edit-${id}`);
+            if (displayEl.classList.contains('hidden')) {
+                displayEl.classList.remove('hidden');
+                editEl.classList.add('hidden');
+            } else {
+                displayEl.classList.add('hidden');
+                editEl.classList.remove('hidden');
+                document.getElementById(`edit-input-${id}`).focus();
+            }
+        }
 
-        window.render = () => {
+        function updateName(id) {
+            const input = document.getElementById(`edit-input-${id}`);
+            const idx = history.findIndex(i => i.id === id);
+            if (idx !== -1) { 
+                history[idx].name = input.value || "未命名產品"; 
+                render(); 
+            }
+        }
+
+        function render() {
             const list = document.getElementById('historyList');
-            const search = document.getElementById('searchHistory').value.toLowerCase();
+            const searchQuery = document.getElementById('searchHistory').value.toLowerCase();
             list.innerHTML = '';
             let totalProfit = 0;
 
-            const filtered = history.filter(i => i.name.toLowerCase().includes(search));
-            
-            filtered.forEach(item => {
+            const filteredHistory = history.filter(item => item.name.toLowerCase().includes(searchQuery));
+
+            filteredHistory.forEach((item) => {
                 totalProfit += item.netProfit;
-                const card = document.createElement('div');
-                card.className = 'history-card bg-white rounded-[2.5rem] shadow-sm border border-amber-50 overflow-hidden mb-4 transition-all';
-                card.innerHTML = `
-                    <div class="p-6 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
+                const el = document.createElement('div');
+                el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden transition-all';
+                el.innerHTML = `
+                    <div class="p-5 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
                         <div class="flex items-center gap-4 min-w-0">
                             <div class="chevron transition-transform text-amber-200">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4"></path></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4"></path></svg>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-black text-black truncate text-lg tracking-tight mb-0.5">${item.name}</h3>
-                                <div class="flex flex-col">
-                                    <p class="text-[10px] font-mono font-black text-blue-400 uppercase leading-tight">
-                                        ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
-                                    </p>
-                                    <p class="text-[8px] font-mono font-black text-slate-300 uppercase leading-tight mt-1 tracking-widest">
-                                        ${item.timestamp}
-                                    </p>
-                                </div>
+                                <h3 class="font-black text-black truncate text-[15px] tracking-tight mb-0.5">${item.name}</h3>
+                                <p class="text-[10px] font-mono font-bold text-blue-500 leading-tight">
+                                    ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
+                                </p>
+                                <p class="text-[9px] font-mono font-bold text-gray-300 mt-1 tracking-tight">${item.date} ${item.time}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4 shrink-0">
-                            <div class="text-right">
-                                <p class="text-[24px] font-black text-slate-900 leading-none">$${item.finalPrice.toLocaleString()}</p>
-                                <p class="text-[12px] text-emerald-500 font-black mt-1">+$${item.netProfit.toLocaleString()}</p>
+                        <div class="text-right flex items-center gap-4">
+                            <div>
+                                <p class="text-[18px] font-black text-gray-900 leading-none tabular-nums">$${item.finalPrice.toLocaleString()}</p>
+                                <p class="text-[11px] text-green-600 font-black mt-1">+$${Math.round(item.netProfit).toLocaleString()}</p>
                             </div>
-                            <button onclick="deleteItem('${item.id}')" class="p-2 bg-slate-50 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-xl active:scale-90 transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <button onclick="deleteItem(${item.id})" class="p-2 text-gray-200 hover:text-red-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"></path></svg>
                             </button>
                         </div>
                     </div>
-
-                    <div class="detail-panel bg-transparent">
-                        <div class="px-6 pb-6 pt-2 space-y-6">
-                            <div class="flex gap-5 items-start">
-                                ${item.image 
-                                    ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 img-box object-cover border-2 border-white shadow-md shrink-0 cursor-pointer">` 
-                                    : `<div class="w-24 h-24 bg-white border-2 border-amber-50 img-box flex items-center justify-center shrink-0">
-                                         <span class="text-amber-100 font-black text-[10px] tracking-widest uppercase">NO IMG</span>
-                                       </div>`}
-                                
-                                <div class="flex-grow min-w-0 pt-0.5">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <p class="text-[9px] font-black text-blue-400 italic tracking-widest mb-1 uppercase opacity-60">Product Details</p>
-                                            
-                                            <div id="name-display-${item.id}" class="flex items-center gap-2 mb-2">
-                                                <h4 class="text-lg font-black text-slate-800 truncate leading-tight">${item.name}</h4>
-                                                <button onclick="toggleEdit('${item.id}')" class="p-1 text-amber-400 opacity-60 hover:opacity-100 transition-opacity">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                </button>
-                                            </div>
-                                            
-                                            <div id="name-edit-${item.id}" class="hidden flex items-center gap-2 mb-2">
-                                                <input id="edit-input-${item.id}" type="text" value="${item.name}" class="p-1 px-2 text-sm border border-amber-100 rounded-lg bg-white w-full font-bold outline-none">
-                                                <button onclick="updateName('${item.id}')" class="bg-emerald-500 text-white p-1 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3"></path></svg></button>
-                                            </div>
-                                        </div>
-                                    </div>
+                    
+                    <div class="detail-panel bg-amber-50/50 border-t border-amber-100/50">
+                        <div class="p-5 space-y-6">
+                            <div class="flex flex-col gap-3">
+                                <label class="text-[9px] font-black text-amber-400 uppercase italic tracking-widest pl-1">Product Details</label>
+                                <div class="flex gap-4 items-center">
+                                    ${item.image ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md shrink-0 cursor-pointer">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-100 flex items-center justify-center text-amber-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
                                     
-                                    <div class="inline-flex items-center gap-1.5 bg-amber-100/40 px-3 py-1 rounded-full">
-                                        <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v18m-9-9h18"></path></svg>
-                                        <span class="text-amber-700 font-black italic text-[9px] tracking-tight">${item.weightLabel}</span>
+                                    <div class="flex-grow min-w-0">
+                                        <label class="text-[8px] font-black text-blue-400 uppercase italic mb-1 block">Product Name</label>
+                                        <div id="name-display-${item.id}" class="flex items-center gap-2 mb-2">
+                                            <span class="text-sm font-black text-gray-700 truncate">${item.name}</span>
+                                            <button onclick="toggleEdit(${item.id})" class="p-1.5 bg-white rounded-lg shadow-sm text-amber-400 hover:text-amber-500 active:scale-90 transition-all">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div id="name-edit-${item.id}" class="hidden flex items-center gap-2 mb-2">
+                                            <input type="text" value="${item.name}" id="edit-input-${item.id}" class="flex-grow p-2.5 bg-white border border-amber-200 rounded-xl text-xs font-bold outline-none shadow-sm text-gray-700">
+                                            <button onclick="updateName(${item.id})" class="w-9 h-9 bg-green-500 text-white rounded-xl shadow-md active:scale-90 flex items-center justify-center shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                                            <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-4 gap-2.5">
-                                <div class="stat-card">
-                                    <span class="text-[8px] font-black text-slate-400 tracking-tighter mb-0.5 uppercase">Cost</span>
-                                    <span class="text-[12px] font-black text-slate-700 leading-none">$${item.rawTwdCost.toLocaleString()}</span>
+                            <div class="flex gap-2">
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-gray-400 font-bold mb-1 uppercase">Cost</p>
+                                    <p class="text-[11px] font-black text-gray-700 leading-none">$${item.rawTwdCost.toLocaleString()}</p>
                                 </div>
-                                <div class="stat-card">
-                                    <span class="text-[8px] font-black text-red-400 tracking-tighter mb-0.5 uppercase">Fees</span>
-                                    <span class="text-[12px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</span>
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-red-300 font-bold mb-1 uppercase">Fees</p>
+                                    <p class="text-[11px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</p>
                                 </div>
-                                <div class="stat-card">
-                                    <span class="text-[8px] font-black text-blue-400 tracking-tighter mb-0.5 uppercase">Refund</span>
-                                    <span class="text-[12px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</span>
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-blue-300 font-bold mb-1 uppercase">Refund</p>
+                                    <p class="text-[11px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</p>
                                 </div>
-                                <div class="stat-card profit">
-                                    <span class="text-[8px] font-black text-emerald-500 tracking-tighter mb-0.5 uppercase">Profit</span>
-                                    <span class="text-[12px] font-black text-emerald-500 leading-none">+$${item.netProfit.toLocaleString()}</span>
+                                <div class="stat-box !border-green-100 !bg-green-50/20">
+                                    <p class="text-[8px] text-green-400 font-black mb-1 uppercase">Profit</p>
+                                    <p class="text-[11px] font-black text-green-600 leading-none">+$${Math.round(item.netProfit).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
-                list.appendChild(card);
+                list.appendChild(el);
             });
+            document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
+        }
 
-            document.getElementById('totalProfit').innerText = totalProfit.toLocaleString();
-        };
+        function handleCardClick(event, el) {
+            if (event.target.closest('button') || event.target.closest('input')) return;
+            el.closest('.history-card').classList.toggle('expanded');
+        }
 
-        window.onload = () => {
-            syncRates();
-        };
+        function deleteItem(id) { history = history.filter(i => i.id !== id); render(); }
+        function showBigImage(src) { document.getElementById('fullImage').src = src; document.getElementById('imageModal').style.display = 'flex'; }
+
+        function exportToExcel() {
+            if (history.length === 0) return;
+            const headers = ["Time", "Product", "Foreign Price", "Currency", "Exchange Rate", "TWD Cost", "Fees", "Refund", "Weight", "Manual Cost", "Final Price", "Profit"];
+            const rows = history.map(item => [item.timestamp, `"${item.name}"`, item.foreign, item.currency, item.bankRate, item.rawTwdCost, -item.extraFee, item.refundTwd, item.weightLabel, item.manualCostInput, item.finalPrice, Math.round(item.netProfit)]);
+            let csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `YU_ZZZ_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        ['profitPercent', 'foreignPrice', 'currency', 'itemName', 'manualCost', 'bankFeeInput'].forEach(id => {
+            document.getElementById(id).addEventListener('input', update);
+        });
+
+        window.onload = syncRates;
     </script>
 </body>
 </html>
