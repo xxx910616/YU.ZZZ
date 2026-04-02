@@ -14,7 +14,7 @@
             --highlight-yellow: #FACC15;
             --list-yellow: #FFFDF5; 
             --brand-blue-grey: #5b7189;
-            --active-yellow: #FEF3C7; /* 淺黃色選取色 */
+            --active-yellow: #FEF3C7;
         }
 
         body { 
@@ -24,52 +24,7 @@
             overflow-x: hidden;
         }
         
-        .color-brand-custom { color: var(--brand-blue-grey); }
-        .bg-brand-custom { background-color: var(--brand-blue-grey); }
-        .color-yellow-main { color: var(--highlight-yellow); }
-
-        input::-webkit-outer-spin-button, 
-        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .history-card.expanded .detail-panel { max-height: 1000px; }
-        .history-card.expanded .chevron { transform: rotate(180deg); }
-        
-        /* 重量按鈕選取樣式 */
-        .weight-btn {
-            transition: all 0.2s ease;
-            border-color: #f3f4f6;
-        }
-        .weight-btn.active {
-            background-color: var(--brand-blue-grey) !important; 
-            color: var(--pure-white) !important;
-            border-color: var(--brand-blue-grey) !important;
-            box-shadow: 0 4px 12px rgba(91, 113, 137, 0.2);
-        }
-        /* 未選取但在操作中的淺黃色效果 */
-        .weight-btn:not(.active):active {
-            background-color: var(--active-yellow) !important;
-        }
-
-        .list-container {
-            background-color: var(--list-yellow);
-            border-top: 1px solid #FEF3C7;
-        }
-
-        #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; padding: 20px; }
-        
-        .clear-search-btn {
-            display: none;
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-        }
-        #searchHistory:not(:placeholder-shown) + .clear-search-btn {
-            display: block;
-        }
-
+        /* 載入畫面優化 */
         .loading-overlay {
             position: fixed;
             inset: 0;
@@ -79,27 +34,58 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.5s;
+            transition: opacity 0.4s ease-out, visibility 0.4s;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
 
+        .color-brand-custom { color: var(--brand-blue-grey); }
+        .bg-brand-custom { background-color: var(--brand-blue-grey); }
+        .color-yellow-main { color: var(--highlight-yellow); }
+
+        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .history-card.expanded .detail-panel { max-height: 1200px; }
+        .history-card.expanded .chevron { transform: rotate(180deg); }
+        
+        .weight-btn { transition: all 0.2s ease; border-color: #f3f4f6; }
+        .weight-btn.active {
+            background-color: var(--brand-blue-grey) !important; 
+            color: var(--pure-white) !important;
+            border-color: var(--brand-blue-grey) !important;
+            box-shadow: 0 4px 12px rgba(91, 113, 137, 0.2);
+        }
+        .weight-btn:not(.active):active { background-color: var(--active-yellow) !important; }
+
+        .list-container { background-color: var(--list-yellow); border-top: 1px solid #FEF3C7; }
+
+        #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; padding: 20px; }
+        
+        .clear-search-btn { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        #searchHistory:not(:placeholder-shown) + .clear-search-btn { display: block; }
+
         .img-box { border-radius: 1.2rem; }
-        .stat-card { border-radius: 1rem; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2.5px solid #FFF9E5; background: white; }
+        .stat-card { border-radius: 1.2rem; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #FFF9E5; background: white; transition: transform 0.2s; }
+        .stat-card:active { transform: scale(0.95); }
         .stat-card.profit { background-color: #f0fdf4; border-color: #dcfce7; }
     </style>
 </head>
 <body class="min-h-screen text-slate-800">
+    <!-- 載入動畫層 -->
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent"></div>
-        <p class="mt-4 font-black text-gray-400 tracking-widest text-xs uppercase">Connecting to YU.ZZZ Cloud...</p>
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-yellow-400 border-t-transparent"></div>
+        <p class="mt-6 font-black text-gray-400 tracking-[0.3em] text-[10px] uppercase">CONNECTING TO CLOUD...</p>
     </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
-        <!-- Header Section -->
-        <div class="p-6 pb-8 bg-[var(--pure-white)] sticky top-0 z-20 shadow-sm border-b border-gray-100 rounded-b-[2.5rem]">
+        <!-- Header -->
+        <div class="p-6 pb-8 bg-white sticky top-0 z-20 shadow-sm border-b border-gray-100 rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
                     <h1 class="text-5xl font-black color-brand-custom italic tracking-tighter leading-none">YU.ZZZ</h1>
-                    <span class="text-[10px] font-black text-black tracking-[0.2em] mt-1 ml-1 uppercase">Official | 2002</span>
+                    <span class="text-[10px] font-black text-black tracking-[0.2em] mt-1 ml-1 uppercase">Official</span>
                 </div>
                 <div class="text-right flex flex-col justify-center">
                     <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">Total Profit</p>
@@ -145,13 +131,13 @@
                     <input type="number" id="profitPercent" value="10" oninput="update()" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Extra cost</label>
+                    <label class="text-[9px] font-black text-gray-500 uppercase ml-1">Extra</label>
                     <input type="number" id="manualCost" value="0" oninput="update()" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm">
                 </div>
             </div>
 
             <div class="space-y-2">
-                <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Weight Range</label>
+                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Weight Range</label>
                 <div class="grid grid-cols-2 gap-2">
                     <button onclick="setWeight('0', this)" data-label="2KG 以下" class="weight-btn active bg-white border p-3 rounded-xl text-[10px] font-black shadow-sm">2KG 以下 (+0)</button>
                     <button onclick="setWeight('2-5', this)" data-label="2-5KG" class="weight-btn bg-white border p-3 rounded-xl text-[10px] font-black shadow-sm">2-5KG (+60)</button>
@@ -161,9 +147,9 @@
             </div>
 
             <div class="space-y-2">
-                <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Product Info</label>
+                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Product Info</label>
                 <div class="flex gap-2.5">
-                    <input type="text" id="itemName" placeholder="輸入產品名稱..." class="w-full p-4 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none shadow-sm">
+                    <input type="text" id="itemName" placeholder="產品名稱..." class="w-full p-4 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none shadow-sm">
                     <button onclick="triggerCamera()" class="px-5 bg-brand-custom text-white rounded-xl active:scale-90 shadow-md flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                     </button>
@@ -178,60 +164,46 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Result Card -->
-        <div class="px-6 pb-8 space-y-5">
             <div class="space-y-1">
-                <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
+                <label class="text-[9px] font-black text-gray-400 uppercase italic pl-2">Original Price</label>
                 <div class="relative">
-                    <input type="number" id="foreignPrice" oninput="update()" placeholder="0" class="w-full p-6 pl-8 pr-24 text-5xl font-black rounded-[2rem] outline-none bg-white border border-gray-200 shadow-inner text-left tabular-nums text-gray-500">
+                    <input type="number" id="foreignPrice" oninput="update()" placeholder="0" class="w-full p-6 pr-24 text-5xl font-black rounded-[2.5rem] bg-white border border-gray-200 shadow-inner text-gray-600 tabular-nums outline-none">
                     <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-gray-200 text-2xl italic uppercase pointer-events-none">KRW</span>
                 </div>
             </div>
 
             <div id="quickResult" class="hidden">
-                <div class="bg-[var(--deep-black)] rounded-[2.5rem] p-7 text-white shadow-2xl relative overflow-hidden">
+                <div class="bg-zinc-900 rounded-[2.5rem] p-7 text-white shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-center mb-5">
-                        <div class="min-w-0 pr-3">
-                            <p class="text-[9px] text-yellow-400 font-bold uppercase tracking-widest">Suggested Price</p>
-                            <p id="finalPrice" class="text-5xl font-black mt-1 tabular-nums text-white">$ 0</p>
+                        <div>
+                            <p class="text-[9px] text-yellow-400 font-bold uppercase tracking-widest">Suggested</p>
+                            <p id="finalPrice" class="text-5xl font-black mt-1 tabular-nums">$ 0</p>
                         </div>
-                        <div class="text-right shrink-0 space-y-1.5">
-                            <p class="text-[10px] font-bold text-red-400 italic flex items-center justify-end gap-1 uppercase">Fee: <span id="resExtra">-$0</span></p>
-                            <p class="text-[10px] font-bold text-green-400 italic flex items-center justify-end gap-1 uppercase">Profit: <span id="resProfit">+$0</span></p>
-                            <p class="text-[10px] font-bold text-gray-400 italic flex items-center justify-end gap-1 uppercase">Cost: <span id="resOriginal">+$0</span></p>
+                        <div class="text-right space-y-1">
+                            <p class="text-[10px] font-bold text-red-400 uppercase">Fee: <span id="resExtra">-$0</span></p>
+                            <p class="text-[10px] font-bold text-emerald-400 uppercase">Profit: <span id="resProfit">+$0</span></p>
                         </div>
                     </div>
-                    <button onclick="saveToHistory()" id="addButton" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
+                    <button onclick="saveToHistory()" id="addButton" class="w-full py-4 bg-yellow-400 text-black font-black text-lg rounded-2xl active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
                 </div>
             </div>
         </div>
 
-        <!-- History List -->
-        <div class="list-container p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
+        <!-- History -->
+        <div class="list-container p-6 rounded-t-[3rem] flex-grow min-h-[500px]">
             <div class="flex items-center gap-3 mb-6 px-1">
-                <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center gap-1.5">
                     <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
-                    <h2 class="text-[10px] font-black text-amber-900/60 uppercase tracking-tighter italic whitespace-nowrap">LIST</h2>
+                    <h2 class="text-[10px] font-black text-amber-900/60 uppercase italic tracking-widest">LIST</h2>
                 </div>
-                
                 <div class="relative flex-grow">
-                    <input type="text" id="searchHistory" oninput="render()" placeholder="Search..." class="w-full py-2 pl-8 pr-8 bg-white border border-amber-100 rounded-xl text-[10px] font-bold outline-none shadow-sm focus:border-amber-300 transition-colors">
-                    <svg class="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <button onclick="clearSearch()" class="clear-search-btn">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </button>
+                    <input type="text" id="searchHistory" oninput="render()" placeholder="Search..." class="w-full py-2 pl-8 pr-4 bg-white border border-amber-100 rounded-xl text-[10px] font-bold outline-none shadow-sm">
+                    <svg class="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="3"></path></svg>
                 </div>
-                
-                <button onclick="exportToExcel()" class="px-4 py-2 bg-white text-green-700 text-[10px] font-black rounded-xl border border-green-100 shadow-sm active:scale-90 transition-all shrink-0 uppercase">CSV</button>
+                <button onclick="exportToExcel()" class="px-4 py-2 bg-white text-green-700 text-[10px] font-black rounded-xl border border-green-100 shadow-sm active:scale-90 uppercase">CSV</button>
             </div>
-
             <div id="historyList" class="space-y-4"></div>
-
-            <div class="mt-12 mb-4 text-center">
-                <p class="text-[10px] font-bold text-amber-900/20 tracking-[0.4em] uppercase">Y U . Z Z Z ™</p>
-            </div>
         </div>
     </div>
 
@@ -242,7 +214,17 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // === 性能優化：強制超時隱藏載入畫面 ===
+        const hideLoading = () => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay && !overlay.classList.contains('hidden')) {
+                overlay.classList.add('hidden');
+            }
+        };
+        // 3秒後無論如何強制進入，避免卡死
+        const bootTimer = setTimeout(hideLoading, 3000);
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
@@ -255,7 +237,6 @@
         let currentWeightTier = "0";
         let currentWeightLabel = "2KG 以下";
         let capturedImageData = null;
-        let currentUser = null;
 
         const taxRefundTable = [
             { min: 30000, max: 49999, refund: 1500 },
@@ -274,32 +255,32 @@
         ];
 
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) { 
+                console.error("Auth failed", e);
+                hideLoading(); // 失敗也要進入
             }
         };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUser = user;
-                startSync();
-                document.getElementById('loadingOverlay').style.opacity = '0';
-                setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+                clearTimeout(bootTimer);
+                hideLoading();
+                const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+                onSnapshot(historyRef, (snapshot) => {
+                    history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => b.timestamp_raw - a.timestamp_raw);
+                    render();
+                }, (err) => console.error("Snapshot error", err));
             } else {
                 initAuth();
             }
         });
-
-        function startSync() {
-            const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-            onSnapshot(historyRef, (snapshot) => {
-                history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => b.timestamp_raw - a.timestamp_raw);
-                render();
-            }, (error) => console.error("Firestore error:", error));
-        }
 
         window.syncRates = async function(btn) {
             const icon = document.getElementById('syncIcon');
@@ -314,7 +295,7 @@
                     document.getElementById('updateTime').innerText = `UPDATE: ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
                     update();
                 }
-            } catch (e) { console.error("Rate fetch failed", e); }
+            } catch (e) { console.error(e); }
             setTimeout(() => icon?.classList.remove('animate-spin'), 600);
         };
 
@@ -329,9 +310,7 @@
         function getTaxRefund(foreignPrice) {
             if (document.getElementById('currency').value !== 'KRW') return 0;
             const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
-            if (tier) return tier.refund;
-            if (foreignPrice >= 1000000) return Math.floor(foreignPrice * 0.06);
-            return 0;
+            return tier ? tier.refund : (foreignPrice >= 1000000 ? Math.floor(foreignPrice * 0.06) : 0);
         }
 
         window.update = function() {
@@ -342,10 +321,7 @@
             const manualCostInput = parseFloat(document.getElementById('manualCost').value) || 0;
             const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
             
-            let weightExtra = 0;
-            if (currentWeightTier === "2-5") weightExtra = 60;
-            else if (currentWeightTier === "5-10") weightExtra = 100;
-            else if (currentWeightTier === "10+") weightExtra = 150;
+            let weightExtra = (currentWeightTier === "2-5") ? 60 : (currentWeightTier === "5-10" ? 100 : (currentWeightTier === "10+" ? 150 : 0));
 
             document.getElementById('priceSuffix').innerText = currency;
             document.getElementById('currentRateDisplay').innerText = bankRate.toFixed(4);
@@ -356,16 +332,12 @@
             }
 
             document.getElementById('quickResult').classList.remove('hidden');
-
             const rawTwdCost = foreignPrice * bankRate;
-            const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
-            const finalPrice = Math.round(targetPrice);
+            const finalPrice = Math.round((rawTwdCost / (1 - feeRate - profitRate)) + weightExtra);
             const extraFee = Math.round(finalPrice * feeRate);
-            const refundKrw = getTaxRefund(foreignPrice);
-            const refundTwd = Math.round(refundKrw * bankRate);
+            const refundTwd = Math.round(getTaxRefund(foreignPrice) * bankRate);
             const netProfit = finalPrice - rawTwdCost - extraFee - manualCostInput + refundTwd;
 
-            document.getElementById('resOriginal').innerText = `+$${Math.round(rawTwdCost).toLocaleString()}`;
             document.getElementById('resExtra').innerText = `-$${extraFee.toLocaleString()}`;
             document.getElementById('resProfit').innerText = `+$${Math.round(netProfit).toLocaleString()}`;
             document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
@@ -373,21 +345,13 @@
             const now = new Date();
             return {
                 timestamp_raw: Date.now(),
-                timestamp: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
-                date: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
-                time: `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
+                timestamp: `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
                 name: document.getElementById('itemName').value || '未命名產品',
                 image: capturedImageData,
-                currency,
-                foreign: foreignPrice,
-                bankRate,
+                currency, foreign: foreignPrice, bankRate,
                 rawTwdCost: Math.round(rawTwdCost),
-                feeRate,
-                weightExtra,
                 weightLabel: currentWeightLabel,
-                refundTwd,
-                finalPrice,
-                extraFee,
+                refundTwd, finalPrice, extraFee,
                 netProfit: Math.round(netProfit),
                 manualCostInput
             };
@@ -405,7 +369,6 @@
                 update();
             };
             reader.readAsDataURL(file);
-            input.value = "";
         };
         window.clearCapturedImage = () => {
             capturedImageData = null;
@@ -413,50 +376,17 @@
         };
 
         window.saveToHistory = async () => {
-            if (!currentUser) return;
             const data = update();
             if (!data) return;
-            const btn = document.getElementById('addButton');
-            btn.disabled = true;
-            btn.innerText = "SAVING...";
-            try {
-                const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-                await addDoc(historyRef, data);
-                document.getElementById('foreignPrice').value = '';
-                document.getElementById('itemName').value = '';
-                clearCapturedImage();
-                document.getElementById('quickResult').classList.add('hidden');
-            } catch (e) { console.error("Save error", e); }
-            btn.disabled = false;
-            btn.innerText = "ADD TO LIST";
+            const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+            await addDoc(historyRef, data);
+            document.getElementById('foreignPrice').value = '';
+            document.getElementById('itemName').value = '';
+            clearCapturedImage();
         };
 
         window.deleteItem = async (id) => {
-            if (!currentUser) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
-            } catch (e) { console.error("Delete failed", e); }
-        };
-
-        window.toggleEdit = (id) => {
-            const d = document.getElementById(`name-display-${id}`);
-            const e = document.getElementById(`name-edit-${id}`);
-            d.classList.toggle('hidden');
-            e.classList.toggle('hidden');
-            if (!e.classList.contains('hidden')) e.querySelector('input').focus();
-        };
-
-        window.updateName = async (id) => {
-            const input = document.getElementById(`edit-input-${id}`);
-            const newName = input.value || "未命名產品";
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id), { name: newName });
-            } catch (e) { console.error("Update failed", e); }
-        };
-
-        window.handleCardClick = (e, el) => {
-            if (e.target.closest('button') || e.target.closest('input')) return;
-            el.closest('.history-card').classList.toggle('expanded');
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
         };
 
         window.showBigImage = (src) => {
@@ -464,21 +394,15 @@
             document.getElementById('imageModal').style.display = 'flex';
         };
 
-        window.clearSearch = () => {
-            document.getElementById('searchHistory').value = '';
-            render();
-        };
-
         window.exportToExcel = () => {
-            if (history.length === 0) return;
-            const headers = ["Time", "Name", "Foreign", "Curr", "Rate", "Final", "Profit"];
-            const rows = history.map(i => [i.timestamp, `"${i.name}"`, i.foreign, i.currency, i.bankRate, i.finalPrice, i.netProfit]);
-            const csv = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+            if (!history.length) return;
+            const headers = ["Time", "Name", "Cost(TWD)", "Price", "Profit"];
+            const rows = history.map(i => [i.timestamp, i.name, i.rawTwdCost, i.finalPrice, i.netProfit]);
+            const csv = "\uFEFF" + [headers, ...rows].map(r => r.join(",")).join("\n");
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = `YU_ZZZ_Export.csv`;
+            a.href = URL.createObjectURL(blob);
+            a.download = `YU_ZZZ_List.csv`;
             a.click();
         };
 
@@ -488,114 +412,70 @@
             list.innerHTML = '';
             let totalProfit = 0;
 
-            const filtered = history.filter(i => i.name.toLowerCase().includes(search));
-            
-            filtered.forEach(item => {
+            history.filter(i => i.name.toLowerCase().includes(search)).forEach(item => {
                 totalProfit += item.netProfit;
                 const card = document.createElement('div');
-                card.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-50 overflow-hidden mb-4 transition-all';
+                card.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-50 overflow-hidden mb-4';
                 card.innerHTML = `
-                    <div class="p-6 flex items-center justify-between cursor-pointer" onclick="handleCardClick(event, this)">
+                    <div class="p-6 flex items-center justify-between cursor-pointer" onclick="this.closest('.history-card').classList.toggle('expanded')">
                         <div class="flex items-center gap-4 min-w-0">
                             <div class="chevron transition-transform text-amber-200">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4"></path></svg>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-black text-black truncate text-lg tracking-tight mb-0.5">${item.name}</h3>
-                                <div class="flex flex-col">
-                                    <p class="text-[10px] font-mono font-black text-blue-400 uppercase leading-tight">
-                                        ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
-                                    </p>
-                                    <p class="text-[8px] font-mono font-black text-slate-300 uppercase leading-tight mt-1 tracking-widest">
-                                        ${item.timestamp}
-                                    </p>
-                                </div>
+                                <h3 class="font-black text-black truncate text-lg">${item.name}</h3>
+                                <p class="text-[10px] font-mono font-black text-blue-400 uppercase">
+                                    ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
+                                </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4 shrink-0">
+                        <div class="flex items-center gap-4">
                             <div class="text-right">
                                 <p class="text-[24px] font-black text-slate-900 leading-none">$${item.finalPrice.toLocaleString()}</p>
                                 <p class="text-[12px] text-emerald-500 font-black mt-1">+$${item.netProfit.toLocaleString()}</p>
                             </div>
-                            <button onclick="deleteItem('${item.id}')" class="p-2 bg-slate-50 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-xl active:scale-90 transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <button onclick="deleteItem('${item.id}')" class="p-2 text-slate-200 hover:text-red-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
                         </div>
                     </div>
-
-                    <div class="detail-panel bg-transparent">
-                        <div class="px-6 pb-6 pt-0">
-                            <p class="text-[9px] font-black text-yellow-500 italic tracking-widest mb-3 uppercase leading-none">PRODUCT DETAILS</p>
-                            
-                            <!-- Main Detail Content: Fixed Height to h-24 (96px) -->
-                            <div class="flex gap-5 items-stretch h-24">
-                                <!-- Left Column: Image (24x24) -->
-                                ${item.image 
-                                    ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-24 h-24 img-box object-cover border-2 border-white shadow-md shrink-0 cursor-pointer">` 
-                                    : `<div class="w-24 h-24 bg-white border-2 border-amber-50 img-box flex items-center justify-center shrink-0">
-                                         <span class="text-amber-100 font-black text-[9px] tracking-widest uppercase text-center px-1 leading-tight">NO IMAGE</span>
-                                       </div>`}
-                                
-                                <!-- Right Column: Info (Aligned with justify-between for equidistant spacing) -->
-                                <div class="flex flex-col justify-between flex-grow min-w-0">
-                                    <!-- Row 1: Label -->
-                                    <p class="text-[9px] font-black text-blue-400 italic tracking-widest uppercase leading-none mt-0.5">PRODUCT NAME</p>
-                                    
-                                    <!-- Row 2: Name/Edit -->
-                                    <div class="min-w-0">
-                                        <div id="name-display-${item.id}" class="flex items-center gap-2">
-                                            <h4 class="text-xl font-black text-slate-800 truncate leading-none tracking-tight">${item.name}</h4>
-                                            <button onclick="toggleEdit('${item.id}')" class="p-1 bg-white shadow-sm border border-amber-50 rounded-lg text-amber-400 active:scale-90 transition-all">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                            </button>
-                                        </div>
-                                        <div id="name-edit-${item.id}" class="hidden flex items-center gap-2">
-                                            <input id="edit-input-${item.id}" type="text" value="${item.name}" class="p-1 px-2 text-md border border-amber-100 rounded-lg bg-white w-full font-bold outline-none">
-                                            <button onclick="updateName('${item.id}')" class="bg-emerald-500 text-white p-1.5 rounded-lg shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3"></path></svg></button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Row 3: Weight Tag -->
-                                    <div class="flex items-center gap-1.5 mb-0.5">
-                                        <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M5 12c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4s-1.79-4-4-4H9c-2.21 0-4 1.79-4 4z"></path></svg>
-                                        <div class="bg-amber-100/50 px-2.5 py-1 rounded-full">
-                                            <span class="text-amber-700 font-black italic text-[10px] tracking-tight leading-none">${item.weightLabel}</span>
-                                        </div>
-                                    </div>
+                    <div class="detail-panel bg-amber-50/20">
+                        <div class="px-6 pb-6 pt-2">
+                             <div class="flex gap-4 mb-5 items-center">
+                                ${item.image ? `<img src="${item.image}" onclick="showBigImage('${item.image}')" class="w-20 h-20 img-box object-cover shadow-md border-2 border-white">` : `<div class="w-20 h-20 bg-white border border-amber-50 img-box flex items-center justify-center"><span class="text-[8px] font-black text-amber-200 uppercase">No Image</span></div>`}
+                                <div class="flex-grow">
+                                    <p class="text-[9px] font-black text-blue-400 italic mb-1 uppercase">Weight Info</p>
+                                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black">${item.weightLabel}</span>
+                                    <p class="text-[8px] text-gray-300 font-mono mt-2">${item.timestamp}</p>
                                 </div>
-                            </div>
-
-                            <!-- Bottom Statistics -->
-                            <div class="grid grid-cols-4 gap-2.5 mt-6">
+                             </div>
+                             <div class="grid grid-cols-4 gap-2.5">
                                 <div class="stat-card">
-                                    <span class="text-[8px] font-black text-slate-400 tracking-tighter mb-1 uppercase">COST</span>
-                                    <span class="text-[12px] font-black text-slate-900 leading-none">$${item.rawTwdCost.toLocaleString()}</span>
+                                    <span class="text-[8px] font-black text-gray-400 uppercase mb-1">Cost</span>
+                                    <span class="text-xs font-black text-slate-800">$${item.rawTwdCost}</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="text-[8px] font-black text-red-400 tracking-tighter mb-1 uppercase">FEES</span>
-                                    <span class="text-[12px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</span>
+                                    <span class="text-[8px] font-black text-red-400 uppercase mb-1">Fee</span>
+                                    <span class="text-xs font-black text-red-400">-$${item.extraFee}</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="text-[8px] font-black text-blue-400 tracking-tighter mb-1 uppercase">REFUND</span>
-                                    <span class="text-[12px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</span>
+                                    <span class="text-[8px] font-black text-blue-400 uppercase mb-1">Tax</span>
+                                    <span class="text-xs font-black text-blue-400">+$${item.refundTwd}</span>
                                 </div>
                                 <div class="stat-card profit">
-                                    <span class="text-[8px] font-black text-emerald-500 tracking-tighter mb-1 uppercase">PROFIT</span>
-                                    <span class="text-[12px] font-black text-emerald-500 leading-none">+$${item.netProfit.toLocaleString()}</span>
+                                    <span class="text-[8px] font-black text-emerald-500 uppercase mb-1">Profit</span>
+                                    <span class="text-xs font-black text-emerald-500">+$${item.netProfit}</span>
                                 </div>
-                            </div>
+                             </div>
                         </div>
                     </div>
                 `;
                 list.appendChild(card);
             });
-
             document.getElementById('totalProfit').innerText = totalProfit.toLocaleString();
         };
 
-        window.onload = () => {
-            syncRates();
-        };
+        window.onload = syncRates;
     </script>
 </body>
 </html>
