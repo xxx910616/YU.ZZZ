@@ -44,8 +44,9 @@
             border-color: var(--brand-blue-grey) !important;
         }
 
-        .history-card { border-radius: 2rem; background: white; overflow: hidden; margin-bottom: 1rem; border: 1px solid #f8f9fa; }
-        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background-color: #FFFDF5; }
+        .history-card { border-radius: 2rem; background: white; overflow: hidden; margin-bottom: 1rem; border: 1px solid #f8f9fa; transition: transform 0.2s; }
+        .history-card:active { transform: scale(0.99); }
+        .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); background-color: #FFFDF5; }
         .expanded .detail-panel { max-height: 1000px; }
         .expanded .chevron { transform: rotate(180deg); }
 
@@ -61,7 +62,7 @@
         }
 
         .stat-box.profit { background-color: #F0FDF4; border-color: #DCFCE7; }
-
+        
         /* 隱藏捲軸 */
         ::-webkit-scrollbar { width: 0; background: transparent; }
     </style>
@@ -70,7 +71,7 @@
 
     <div id="loadingOverlay" class="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-yellow-400 border-t-transparent"></div>
-        <p class="mt-4 font-black text-gray-400 tracking-widest text-[10px] uppercase">Connecting...</p>
+        <p class="mt-4 font-black text-gray-400 tracking-widest text-[10px] uppercase">Connecting to YU.ZZZ...</p>
     </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
@@ -79,7 +80,7 @@
             <div class="flex justify-between items-start mb-6">
                 <div>
                     <h1 class="text-5xl font-black text-[#5b7189] italic tracking-tighter leading-none">YU.ZZZ</h1>
-                    <span class="text-[10px] font-black text-black tracking-[0.2em] mt-1 ml-1 uppercase">Official</span>
+                    <span class="text-[10px] font-black text-black tracking-[0.2em] mt-1 ml-1 uppercase">Official Tool</span>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Total Profit</p>
@@ -91,8 +92,8 @@
                 <div class="bg-[#F0F7FF] p-3 rounded-2xl border border-blue-50">
                     <p class="text-[9px] text-blue-400 font-bold uppercase mb-1">Exchange Rate</p>
                     <div class="flex items-center justify-between">
-                        <p id="rateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0000</p>
-                        <button onclick="syncRates()" class="p-1.5 bg-white text-blue-600 rounded-lg shadow-sm">
+                        <p id="rateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0245</p>
+                        <button onclick="syncRates()" class="p-1.5 bg-white text-blue-600 rounded-lg shadow-sm active:scale-90 transition-transform">
                             <svg id="syncIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"></path></svg>
                         </button>
                     </div>
@@ -148,7 +149,7 @@
             </div>
 
             <div id="resultBox" class="hidden">
-                <div class="bg-zinc-900 rounded-[2.5rem] p-7 text-white shadow-2xl">
+                <div class="bg-zinc-900 rounded-[2.5rem] p-7 text-white shadow-2xl transition-all">
                     <div class="flex justify-between items-center mb-5">
                         <div>
                             <p class="text-[9px] text-yellow-400 font-bold uppercase tracking-widest">Suggested Price</p>
@@ -158,7 +159,7 @@
                             <p class="text-[10px] font-bold text-emerald-400 uppercase">Profit: <span id="suggestedProfit">+$0</span></p>
                         </div>
                     </div>
-                    <button onclick="saveItem()" class="w-full py-4 bg-yellow-400 text-black font-black text-lg rounded-2xl active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
+                    <button onclick="saveItem()" id="addBtn" class="w-full py-4 bg-yellow-400 text-black font-black text-lg rounded-2xl active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
                 </div>
             </div>
         </div>
@@ -167,9 +168,9 @@
         <div class="bg-[#FFFDF5] p-6 rounded-t-[3rem] flex-grow border-t border-amber-100 min-h-[400px]">
             <div class="flex items-center gap-3 mb-6 px-1">
                 <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
-                <h2 class="text-[10px] font-black text-amber-900/60 uppercase italic tracking-widest">LIST</h2>
+                <h2 class="text-[10px] font-black text-amber-900/60 uppercase italic tracking-widest">History List</h2>
             </div>
-            <div id="listContainer" class="space-y-4"></div>
+            <div id="listContainer" class="space-y-4 pb-10"></div>
         </div>
     </div>
 
@@ -192,10 +193,10 @@
 
         // --- 核心邏輯 ---
 
-        // 1. 同步匯率
+        // 同步匯率 (獨立執行)
         window.syncRates = async () => {
             const icon = document.getElementById('syncIcon');
-            icon.classList.add('animate-spin');
+            if (icon) icon.classList.add('animate-spin');
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/TWD');
                 const data = await res.json();
@@ -204,11 +205,11 @@
                     rates.JPY = 1 / data.rates.JPY;
                     runUpdate();
                 }
-            } catch (e) { console.error(e); }
-            setTimeout(() => icon.classList.remove('animate-spin'), 500);
+            } catch (e) { console.warn("Exchange rate fetch failed, using default."); }
+            if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 500);
         };
 
-        // 2. 設定重量
+        // 設定重量
         window.setWeightTier = (val, btn) => {
             weightExtra = parseFloat(val);
             document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
@@ -216,7 +217,7 @@
             runUpdate();
         };
 
-        // 3. 計算退稅 (KRW 專用)
+        // 計算退稅
         function getKRWRefund(price) {
             if (price < 30000) return 0;
             if (price < 50000) return 1500;
@@ -234,7 +235,7 @@
             return 35000;
         }
 
-        // 4. 更新運算
+        // 更新運算 (優化效能，立即可用)
         window.runUpdate = () => {
             const cur = document.getElementById('currency').value;
             const bankRate = rates[cur];
@@ -278,27 +279,36 @@
             };
         };
 
-        // 5. 存檔到 Firebase
+        // 存檔
         window.saveItem = async () => {
             const data = runUpdate();
             if (!data) return;
+            const btn = document.getElementById('addBtn');
+            btn.disabled = true;
+            btn.innerText = "SAVING...";
             try {
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
                 await addDoc(colRef, data);
                 document.getElementById('foreignPrice').value = '';
                 document.getElementById('pName').value = '';
-            } catch (e) { console.error(e); }
+                document.getElementById('resultBox').classList.add('hidden');
+            } catch (e) { console.error("Save error", e); }
+            btn.disabled = false;
+            btn.innerText = "ADD TO LIST";
         };
 
-        // 6. 刪除
+        // 刪除
         window.deleteItem = async (e, id) => {
             e.stopPropagation();
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
+            } catch (e) { console.error("Delete error", e); }
         };
 
-        // 7. 渲染清單 (依照圖檔樣式優化)
+        // 渲染清單
         function render() {
             const container = document.getElementById('listContainer');
+            if (!container) return;
             container.innerHTML = '';
             let total = 0;
 
@@ -341,9 +351,6 @@
                                     <p class="text-[9px] font-black text-blue-400 uppercase italic mb-1">Product Name</p>
                                     <div class="flex items-center gap-2">
                                         <span class="text-base font-black text-slate-800">${item.name}</span>
-                                        <span class="p-1 bg-white rounded-lg shadow-sm">
-                                            <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                                        </span>
                                     </div>
                                     <div class="mt-3 flex items-center gap-2 bg-[#FEF3C7] px-3 py-1.5 rounded-full w-fit">
                                         <svg class="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
@@ -352,46 +359,40 @@
                                 </div>
                             </div>
                             <div class="grid grid-cols-4 gap-3">
-                                <div class="stat-box">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase mb-1">Cost</span>
-                                    <span class="text-xs font-black">$${item.costTwd}</span>
-                                </div>
-                                <div class="stat-box">
-                                    <span class="text-[8px] font-black text-red-400 uppercase mb-1">Fees</span>
-                                    <span class="text-xs font-black text-red-400">-$${item.fee}</span>
-                                </div>
-                                <div class="stat-box">
-                                    <span class="text-[8px] font-black text-blue-400 uppercase mb-1">Refund</span>
-                                    <span class="text-xs font-black text-blue-400">+$${item.refund}</span>
-                                </div>
-                                <div class="stat-box profit">
-                                    <span class="text-[8px] font-black text-emerald-500 uppercase mb-1">Profit</span>
-                                    <span class="text-xs font-black text-emerald-500">+$${item.profit}</span>
-                                </div>
+                                <div class="stat-box"><span class="text-[8px] font-black text-gray-400 uppercase mb-1">Cost</span><span class="text-xs font-black">$${item.costTwd}</span></div>
+                                <div class="stat-box"><span class="text-[8px] font-black text-red-400 uppercase mb-1">Fees</span><span class="text-xs font-black text-red-400">-$${item.fee}</span></div>
+                                <div class="stat-box"><span class="text-[8px] font-black text-blue-400 uppercase mb-1">Tax</span><span class="text-xs font-black text-blue-400">+$${item.refund}</span></div>
+                                <div class="stat-box profit"><span class="text-[8px] font-black text-emerald-500 uppercase mb-1">Profit</span><span class="text-xs font-black text-emerald-500">+$${item.profit}</span></div>
                             </div>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            document.getElementById('totalProfit').innerText = total.toLocaleString();
+            const totalDisplay = document.getElementById('totalProfit');
+            if (totalDisplay) totalDisplay.innerText = total.toLocaleString();
         }
 
-        // --- 初始化啟動 ---
+        // --- 初始化啟動 (優化順序) ---
         async function start() {
-            // 立即移除 Overlay (避免使用者等待)
+            // 1. 立即移除載入畫面，讓使用者可以用計算機
             const overlay = document.getElementById('loadingOverlay');
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 300);
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 300);
+            }
 
-            // 背景處理 Firebase 與匯率
+            // 2. 平行啟動匯率同步
             syncRates();
             
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            // 3. 處理 Firebase 背景登入
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) { console.warn("Firebase Auth background silent fail."); }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
@@ -400,13 +401,13 @@
                         items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
                                     .sort((a,b) => new Date(b.time) - new Date(a.time));
                         render();
-                    });
+                    }, (err) => console.error("Snapshot error", err));
                 }
             });
         }
 
+        // 啟動
         start();
-
     </script>
 </body>
 </html>
