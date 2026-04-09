@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>YU.ZZZ OFFICIAL</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
     <style>
         :root {
             --bg-gray: #F8F9FA;
@@ -77,7 +73,6 @@
             display: block;
         }
 
-        /* Loading Overlay */
         #loadingOverlay {
             position: fixed;
             inset: 0;
@@ -99,8 +94,7 @@
     </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
-        
-        <!-- 頂部數據看板 -->
+        <!-- Dashboard Header -->
         <div class="p-6 pb-8 bg-[var(--pure-white)] sticky top-0 z-20 shadow-sm border-b border-gray-100 rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
@@ -136,7 +130,7 @@
             </div>
         </div>
 
-        <!-- 輸入區域 -->
+        <!-- Inputs Section -->
         <div class="px-6 py-5 space-y-5">
             <div class="grid grid-cols-3 gap-2.5">
                 <div class="space-y-1">
@@ -186,7 +180,7 @@
             </div>
         </div>
 
-        <!-- 價格區 -->
+        <!-- Calculator Output -->
         <div class="px-6 pb-8 space-y-5">
             <div class="space-y-1">
                 <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
@@ -209,12 +203,12 @@
                             <p class="text-[10px] font-bold text-gray-400 italic flex items-center justify-end gap-1 uppercase">Cost: <span id="resOriginal">+$0</span></p>
                         </div>
                     </div>
-                    <button id="addToListBtn" class="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
+                    <button id="addToListBtn" class="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg h-14">ADD TO LIST</button>
                 </div>
             </div>
         </div>
 
-        <!-- 歷史清單 -->
+        <!-- History List -->
         <div class="list-container p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
             <div class="flex items-center gap-3 mb-6 px-1">
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -235,23 +229,24 @@
 
             <div id="historyList" class="space-y-4"></div>
 
-            <!-- 頁尾宣告 -->
             <div class="mt-12 mb-4 text-center">
                 <p class="text-[10px] font-bold text-amber-900/20 tracking-[0.4em] uppercase">Y U . Z Z Z ™</p>
             </div>
         </div>
     </div>
 
+    <!-- Modals -->
     <div id="imageModal">
         <img id="fullImage" src="" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl">
     </div>
 
+    <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Setup ---
+        // Firebase Setup
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -281,17 +276,13 @@
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
-        // --- Core Functions ---
+        // --- Logic Functions ---
 
         async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth failed:", error);
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
             }
         }
 
@@ -312,12 +303,10 @@
                 if (data.result === 'success') {
                     exchangeRates.KRW = 1 / data.rates.KRW;
                     exchangeRates.JPY = 1 / data.rates.JPY;
-                    document.getElementById('updateTime').innerText = `更新於 ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
+                    document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                     updatePricePreview();
                 }
-            } catch (e) { 
-                console.error("Rate fetch failed"); 
-            }
+            } catch (e) { console.error("Rate fetch failed"); }
             setTimeout(() => icon && icon.classList.remove('animate-spin'), 600);
         }
 
@@ -345,6 +334,7 @@
             document.getElementById('quickResult').classList.remove('hidden');
 
             const rawTwdCost = (foreignPrice * bankRate);
+            // Formula: Selling Price = (Cost / (1 - Fees% - Profit%)) + Weight
             const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
             const finalPrice = Math.round(targetPrice);
             const extraFee = Math.round(finalPrice * feeRate);
@@ -383,7 +373,7 @@
             };
         }
 
-        // --- Database Ops ---
+        // --- Firebase Ops ---
 
         async function saveToFirestore(itemData) {
             if (!user) return;
@@ -403,9 +393,9 @@
             await updateDoc(docRef, { name: newName });
         }
 
-        // --- UI Rendering ---
+        // --- Render UI ---
 
-        function render() {
+        function renderHistory() {
             const list = document.getElementById('historyList');
             const searchQuery = document.getElementById('searchHistory').value.toLowerCase();
             list.innerHTML = '';
@@ -448,7 +438,6 @@
                                 <label class="text-[9px] font-black text-amber-400 uppercase italic tracking-widest pl-1">Product Details</label>
                                 <div class="flex gap-4 items-center">
                                     ${item.image ? `<img src="${item.image}" class="detail-img w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md shrink-0 cursor-pointer">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-100 flex items-center justify-center text-amber-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
-                                    
                                     <div class="flex-grow min-w-0">
                                         <label class="text-[8px] font-black text-blue-400 uppercase italic mb-1 block">Product Name</label>
                                         <div id="name-display-${item.id}" class="name-display-area flex items-center gap-2 mb-2">
@@ -464,7 +453,6 @@
                                             </button>
                                         </div>
                                         <div class="flex items-center gap-1.5">
-                                            <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
                                             <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
                                         </div>
                                     </div>
@@ -493,13 +481,16 @@
                     </div>
                 `;
 
-                // Add Event Listeners
+                // Item Listeners
                 el.querySelector('.card-header').onclick = (e) => {
                     if (e.target.closest('button')) return;
                     el.classList.toggle('expanded');
                 };
 
-                el.querySelector('.delete-btn').onclick = () => deleteFromFirestore(item.id);
+                el.querySelector('.delete-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    deleteFromFirestore(item.id);
+                };
 
                 if (item.image) {
                     el.querySelector('.detail-img').onclick = () => {
@@ -527,104 +518,120 @@
             document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
         }
 
-        // --- Init and Event Binding ---
+        // --- Event Binding ---
+
+        window.onload = () => {
+            initAuth();
+            syncRates();
+        };
 
         onAuthStateChanged(auth, (u) => {
             user = u;
             if (user) {
-                // Remove loading overlay
                 document.getElementById('loadingOverlay').style.opacity = '0';
                 setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
 
-                // Subscribe to changes
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
                 onSnapshot(q, (snapshot) => {
                     history = snapshot.docs.map(doc => doc.data());
-                    // Sort by timestamp desc locally
                     history.sort((a, b) => b.id - a.id);
-                    render();
+                    renderHistory();
                 }, (err) => console.error("Firestore error:", err));
             }
         });
 
-        initAuth();
-        syncRates();
+        // Input Observers
+        ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput'].forEach(id => {
+            document.getElementById(id).oninput = updatePricePreview;
+        });
 
-        // Bind DOM events
-        document.getElementById('syncBtn').onclick = syncRates;
-        
-        document.getElementById('weightBtnContainer').onclick = (e) => {
-            const btn = e.target.closest('.weight-btn');
-            if (!btn) return;
-            currentWeightTier = btn.dataset.tier;
-            currentWeightLabel = btn.dataset.label;
-            document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updatePricePreview();
-        };
+        document.getElementById('currency').onchange = updatePricePreview;
 
-        document.getElementById('cameraBtn').onclick = () => document.getElementById('hiddenCameraInput').click();
-        
-        document.getElementById('hiddenCameraInput').onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                capturedImageData = ev.target.result;
-                document.getElementById('photoPreviewImg').src = capturedImageData;
-                document.getElementById('photoPreviewContainer').classList.remove('hidden');
+        // Weight Tier Selection
+        document.querySelectorAll('.weight-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentWeightTier = btn.dataset.tier;
+                currentWeightLabel = btn.dataset.label;
                 updatePricePreview();
             };
-            reader.readAsDataURL(file);
-            e.target.value = "";
+        });
+
+        // Camera Logic
+        document.getElementById('cameraBtn').onclick = () => {
+            document.getElementById('hiddenCameraInput').click();
+        };
+
+        document.getElementById('hiddenCameraInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    capturedImageData = event.target.result;
+                    document.getElementById('photoPreviewImg').src = capturedImageData;
+                    document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
         };
 
         document.getElementById('clearPhotoBtn').onclick = () => {
             capturedImageData = null;
             document.getElementById('photoPreviewContainer').classList.add('hidden');
-            document.getElementById('photoPreviewImg').src = '';
         };
 
-        document.getElementById('addToListBtn').onclick = async () => {
+        // Modal Close
+        document.getElementById('imageModal').onclick = function() { this.style.display = 'none'; };
+
+        // Add to List
+        document.getElementById('addToListBtn').onclick = () => {
             const data = updatePricePreview();
-            if (!data) return;
-            await saveToFirestore(data);
-            
-            // Reset fields
-            document.getElementById('foreignPrice').value = '';
-            document.getElementById('itemName').value = '';
-            capturedImageData = null;
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
-            document.getElementById('quickResult').classList.add('hidden');
+            if (data) {
+                saveToFirestore(data);
+                // Clear UI
+                document.getElementById('foreignPrice').value = '';
+                document.getElementById('itemName').value = '';
+                capturedImageData = null;
+                document.getElementById('photoPreviewContainer').classList.add('hidden');
+                document.getElementById('quickResult').classList.add('hidden');
+            }
         };
 
+        // Search & Export
+        document.getElementById('searchHistory').oninput = renderHistory;
         document.getElementById('clearSearchBtn').onclick = () => {
             document.getElementById('searchHistory').value = '';
-            render();
+            renderHistory();
         };
-
-        document.getElementById('searchHistory').oninput = render;
-
-        document.getElementById('imageModal').onclick = function() { this.style.display = 'none'; };
 
         document.getElementById('exportCsvBtn').onclick = () => {
             if (history.length === 0) return;
-            const headers = ["Time", "Product", "Foreign Price", "Currency", "Exchange Rate", "TWD Cost", "Fees", "Refund", "Weight", "Manual Cost", "Final Price", "Profit"];
-            const rows = history.map(item => [item.timestamp, `"${item.name}"`, item.foreign, item.currency, item.bankRate, item.rawTwdCost, -item.extraFee, item.refundTwd, item.weightLabel, item.manualCostInput, item.finalPrice, Math.round(item.netProfit)]);
+            const headers = ["Time", "Product", "Foreign Price", "Currency", "TWD Cost", "Fees", "Refund", "Weight", "Manual Cost", "Final Price", "Profit"];
+            const rows = history.map(item => [
+                item.timestamp, 
+                `"${item.name}"`, 
+                item.foreign, 
+                item.currency, 
+                item.rawTwdCost, 
+                -item.extraFee, 
+                item.refundTwd, 
+                item.weightLabel, 
+                item.manualCostInput, 
+                item.finalPrice, 
+                Math.round(item.netProfit)
+            ]);
             let csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.setAttribute("href", URL.createObjectURL(blob));
-            link.setAttribute("download", `YU_ZZZ_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `YU_ZZZ_EXPORT_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         };
 
-        // Inputs binding
-        ['profitPercent', 'foreignPrice', 'currency', 'itemName', 'manualCost', 'bankFeeInput'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updatePricePreview);
-        });
+        document.getElementById('syncBtn').onclick = syncRates;
 
     </script>
 </body>
