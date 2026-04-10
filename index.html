@@ -90,7 +90,10 @@
     <!-- Loading Screen -->
     <div id="loadingOverlay">
         <h1 class="text-4xl font-black color-brand-custom italic tracking-tighter mb-4 animate-pulse">YU.ZZZ</h1>
-        <div class="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+        <div class="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p id="loadingStatus" class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Initializing...</p>
+        <!-- 超時手動按鈕 -->
+        <button id="forceEntryBtn" class="hidden mt-8 px-6 py-2 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full border border-gray-200 uppercase tracking-widest">跳過加載</button>
     </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
@@ -259,6 +262,7 @@
         let currentWeightTier = "0";
         let currentWeightLabel = "2kg 以下";
         let capturedImageData = null;
+        let isAuthCompleted = false;
 
         const taxRefundTable = [
             { min: 30000, max: 49999, refund: 1500 },
@@ -279,11 +283,29 @@
         // --- Logic Functions ---
 
         async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            const statusText = document.getElementById('loadingStatus');
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    statusText.innerText = "Authenticating (Token)...";
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    statusText.innerText = "Authenticating (Anon)...";
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth Error:", err);
+                statusText.innerText = "Auth Failed. Retrying...";
+                // 如果失敗，嘗試最後一次匿名登入
+                try { await signInAnonymously(auth); } catch(e) {}
             }
+        }
+
+        function hideLoading() {
+            if (isAuthCompleted) return;
+            isAuthCompleted = true;
+            const loader = document.getElementById('loadingOverlay');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
         }
 
         function getTaxRefund(foreignPrice) {
@@ -376,20 +398,26 @@
 
         async function saveToFirestore(itemData) {
             if (!user) return;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id);
-            await setDoc(docRef, itemData);
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id);
+                await setDoc(docRef, itemData);
+            } catch(e) { console.error("Save failed", e); }
         }
 
         async function deleteFromFirestore(id) {
             if (!user) return;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-            await deleteDoc(docRef);
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
+                await deleteDoc(docRef);
+            } catch(e) { console.error("Delete failed", e); }
         }
 
         async function updateNameInFirestore(id, newName) {
             if (!user) return;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-            await updateDoc(docRef, { name: newName });
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
+                await updateDoc(docRef, { name: newName });
+            } catch(e) { console.error("Update failed", e); }
         }
 
         // --- Render UI ---
@@ -547,23 +575,41 @@
 
         // --- Event Binding ---
 
-        window.onload = () => {
-            initAuth();
+        window.onload = async () => {
+            // 安全機制：設置 5 秒超時，超時則顯示手動跳過按鈕
+            setTimeout(() => {
+                if (!isAuthCompleted) {
+                    document.getElementById('forceEntryBtn').classList.remove('hidden');
+                    document.getElementById('loadingStatus').innerText = "Loading taking longer than usual...";
+                }
+            }, 5000);
+
+            // 啟動驗證
+            await initAuth();
             syncRates();
+        };
+
+        // 手動跳過按鈕點擊
+        document.getElementById('forceEntryBtn').onclick = () => {
+            hideLoading();
         };
 
         onAuthStateChanged(auth, (u) => {
             user = u;
             if (user) {
-                document.getElementById('loadingOverlay').style.opacity = '0';
-                setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+                // 驗證成功後直接關閉 loading
+                hideLoading();
 
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
                 onSnapshot(q, (snapshot) => {
                     history = snapshot.docs.map(doc => doc.data());
                     history.sort((a, b) => b.id - a.id);
                     renderHistory();
-                }, (err) => console.error("Firestore error:", err));
+                }, (err) => {
+                    console.error("Firestore error:", err);
+                    // 如果 Firestore 加載失敗，至少要能讓使用者看到空清單
+                    renderHistory();
+                });
             }
         });
 
