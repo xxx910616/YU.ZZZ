@@ -73,6 +73,11 @@
         #searchHistory:not(:placeholder-shown) + .clear-search-btn {
             display: block;
         }
+        
+        /* 確保黑色區塊在手機上顯示時有層次感 */
+        #quickResult {
+            transition: all 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -148,8 +153,8 @@
                 <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Product Info</label>
                 <div class="flex gap-2.5">
                     <input type="text" id="itemName" placeholder="輸入產品名稱..." class="w-full p-4 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none shadow-sm">
-                    <button id="cameraBtn" type="button" class="px-5 bg-brand-custom text-white rounded-xl active:scale-95 shadow-md flex items-center justify-center cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                    <button id="cameraBtn" type="button" class="px-5 bg-brand-custom text-white rounded-xl active:scale-95 shadow-md flex items-center justify-center">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                     </button>
                     <input type="file" id="hiddenCameraInput" accept="image/*" capture="environment" class="hidden">
                 </div>
@@ -174,6 +179,7 @@
                 </div>
             </div>
 
+            <!-- 黑色結果區塊 -->
             <div id="quickResult" class="hidden">
                 <div class="bg-[var(--deep-black)] rounded-[2.5rem] p-7 text-white shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-center mb-5">
@@ -287,6 +293,7 @@
                 if (data.result === 'success') {
                     exchangeRates.KRW = 1 / data.rates.KRW;
                     exchangeRates.JPY = 1 / data.rates.JPY;
+                    document.getElementById('currentRateDisplay').innerText = exchangeRates[document.getElementById('currency').value].toFixed(4);
                     document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                     updatePricePreview();
                 }
@@ -298,9 +305,11 @@
             const currency = document.getElementById('currency').value;
             const bankRate = exchangeRates[currency];
             const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
-            const foreignPrice = parseFloat(document.getElementById('foreignPrice').value) || 0;
+            const foreignPriceInput = document.getElementById('foreignPrice');
+            const foreignPrice = parseFloat(foreignPriceInput.value) || 0;
             const manualCostInput = parseFloat(document.getElementById('manualCost').value) || 0;
             const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
+            const resultBox = document.getElementById('quickResult');
             
             let weightExtra = 0;
             if (currentWeightTier === "2-5") weightExtra = 60;
@@ -310,12 +319,13 @@
             document.getElementById('priceSuffix').innerText = currency;
             document.getElementById('currentRateDisplay').innerText = bankRate.toFixed(4);
 
-            if (foreignPrice <= 0) {
-                document.getElementById('quickResult').classList.add('hidden');
+            // 核心邏輯：只要有數字就顯示，沒有就隱藏
+            if (foreignPrice > 0) {
+                resultBox.classList.remove('hidden');
+            } else {
+                resultBox.classList.add('hidden');
                 return null;
             }
-
-            document.getElementById('quickResult').classList.remove('hidden');
 
             const rawTwdCost = (foreignPrice * bankRate);
             const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
@@ -514,7 +524,6 @@
         const previewImg = document.getElementById('photoPreviewImg');
         const clearPhotoBtn = document.getElementById('clearPhotoBtn');
 
-        // 改良觸發邏輯，增加點擊回饋
         cameraBtn.addEventListener('click', (e) => {
             e.preventDefault();
             hiddenInput.click();
@@ -561,9 +570,14 @@
             }
         });
 
-        // Input Observers
-        ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput'].forEach(id => {
-            document.getElementById(id).oninput = updatePricePreview;
+        // 深度優化輸入監聽，確保黑色區塊在任何情況下都能彈出
+        const inputIds = ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput'];
+        inputIds.forEach(id => {
+            const el = document.getElementById(id);
+            // 同時監聽多個事件以應對手機輸入法
+            ['input', 'keyup', 'change', 'focus'].forEach(evt => {
+                el.addEventListener(evt, updatePricePreview);
+            });
         });
 
         document.getElementById('currency').onchange = updatePricePreview;
