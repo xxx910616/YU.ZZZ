@@ -82,7 +82,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.5s;
+            transition: opacity 0.5s, visibility 0.5s;
         }
     </style>
 </head>
@@ -91,9 +91,8 @@
     <div id="loadingOverlay">
         <h1 class="text-4xl font-black color-brand-custom italic tracking-tighter mb-4 animate-pulse">YU.ZZZ</h1>
         <div class="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p id="loadingStatus" class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Initializing...</p>
-        <!-- 超時手動按鈕 -->
-        <button id="forceEntryBtn" class="hidden mt-8 px-6 py-2 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full border border-gray-200 uppercase tracking-widest">跳過加載</button>
+        <p id="loadingStatus" class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Connecting...</p>
+        <button id="forceEntryBtn" class="hidden mt-8 px-6 py-2 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full border border-gray-200 uppercase tracking-widest">跳過等待</button>
     </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
@@ -280,45 +279,38 @@
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
+        // 強制隱藏加載畫面
+        function hideLoading() {
+            if (isAuthCompleted) return;
+            isAuthCompleted = true;
+            const loader = document.getElementById('loadingOverlay');
+            if (!loader) return;
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.visibility = 'hidden';
+                loader.style.display = 'none';
+            }, 500);
+        }
+
         // --- Logic Functions ---
 
         async function initAuth() {
             const statusText = document.getElementById('loadingStatus');
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    statusText.innerText = "Authenticating (Token)...";
+                    statusText.innerText = "AUTH TOKEN...";
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    statusText.innerText = "Authenticating (Anon)...";
+                    statusText.innerText = "AUTH ANON...";
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.error("Auth Error:", err);
-                statusText.innerText = "Auth Failed. Retrying...";
-                // 如果失敗，嘗試最後一次匿名登入
-                try { await signInAnonymously(auth); } catch(e) {}
+                console.warn("Auth Failed, will try to proceed anyway", err);
+                hideLoading(); // 失敗也強制進入
             }
         }
 
-        function hideLoading() {
-            if (isAuthCompleted) return;
-            isAuthCompleted = true;
-            const loader = document.getElementById('loadingOverlay');
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
-        }
-
-        function getTaxRefund(foreignPrice) {
-            if (document.getElementById('currency').value !== 'KRW') return 0;
-            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
-            if (tier) return tier.refund;
-            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
-            return 0;
-        }
-
         async function syncRates() {
-            const icon = document.getElementById('syncIcon');
-            if (icon) icon.classList.add('animate-spin');
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/TWD');
                 const data = await res.json();
@@ -328,8 +320,15 @@
                     document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                     updatePricePreview();
                 }
-            } catch (e) { console.error("Rate fetch failed"); }
-            setTimeout(() => { if(icon) icon.classList.remove('animate-spin'); }, 600);
+            } catch (e) { console.warn("Rate fetch failed"); }
+        }
+
+        function getTaxRefund(foreignPrice) {
+            if (document.getElementById('currency').value !== 'KRW') return 0;
+            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
+            if (tier) return tier.refund;
+            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
+            return 0;
         }
 
         function updatePricePreview() {
@@ -394,34 +393,7 @@
             };
         }
 
-        // --- Firebase Ops ---
-
-        async function saveToFirestore(itemData) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id);
-                await setDoc(docRef, itemData);
-            } catch(e) { console.error("Save failed", e); }
-        }
-
-        async function deleteFromFirestore(id) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-                await deleteDoc(docRef);
-            } catch(e) { console.error("Delete failed", e); }
-        }
-
-        async function updateNameInFirestore(id, newName) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-                await updateDoc(docRef, { name: newName });
-            } catch(e) { console.error("Update failed", e); }
-        }
-
         // --- Render UI ---
-
         function renderHistory() {
             const list = document.getElementById('historyList');
             const searchQuery = document.getElementById('searchHistory').value.toLowerCase();
@@ -431,7 +403,7 @@
             const filteredHistory = history.filter(item => item.name.toLowerCase().includes(searchQuery));
 
             filteredHistory.forEach((item) => {
-                totalProfit += item.netProfit;
+                totalProfit += (item.netProfit || 0);
                 const el = document.createElement('div');
                 el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden transition-all';
                 el.innerHTML = `
@@ -445,7 +417,6 @@
                                 <p class="text-[10px] font-mono font-bold text-blue-500 leading-tight">
                                     ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
                                 </p>
-                                <p class="text-[9px] font-mono font-bold text-gray-300 mt-1 tracking-tight">${item.date} ${item.time}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-4">
@@ -458,169 +429,83 @@
                             </button>
                         </div>
                     </div>
-                    
                     <div class="detail-panel bg-amber-50/50 border-t border-amber-100/50">
-                        <div class="p-5 space-y-6">
-                            <div class="flex flex-col gap-3">
-                                <label class="text-[9px] font-black text-amber-400 uppercase italic tracking-widest pl-1">Product Details</label>
-                                <div class="flex gap-4 items-center">
-                                    ${item.image ? `<img src="${item.image}" class="detail-img w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md shrink-0 cursor-pointer">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-100 flex items-center justify-center text-amber-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
-                                    <div class="flex-grow min-w-0">
-                                        <label class="text-[8px] font-black text-blue-400 uppercase italic mb-1 block">Product Name</label>
-                                        <div id="name-display-${item.id}" class="name-display-area flex items-center gap-2 mb-2">
-                                            <span class="text-sm font-black text-gray-700 truncate">${item.name}</span>
-                                            <button class="edit-name-btn p-1.5 bg-white rounded-lg shadow-sm text-amber-400 hover:text-amber-500 active:scale-90 transition-all">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
-                                            </button>
-                                        </div>
-                                        <div id="name-edit-${item.id}" class="name-edit-area hidden flex items-center gap-2 mb-2">
-                                            <input type="text" value="${item.name}" class="edit-input-field flex-grow p-2.5 bg-white border border-amber-200 rounded-xl text-xs font-bold outline-none shadow-sm text-gray-700">
-                                            <button class="save-name-btn w-9 h-9 bg-green-500 text-white rounded-xl shadow-md active:scale-90 flex items-center justify-center shrink-0">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                            </button>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
-                                        </div>
+                        <div class="p-5 space-y-4">
+                            <div class="flex gap-4 items-center">
+                                ${item.image ? `<img src="${item.image}" class="detail-img w-20 h-20 rounded-xl object-cover border-2 border-white shadow-md cursor-pointer">` : `<div class="w-20 h-20 bg-white rounded-xl border border-amber-100 flex items-center justify-center text-amber-200 text-[8px] font-bold">NO IMG</div>`}
+                                <div class="flex-grow">
+                                    <div class="name-display-area flex items-center gap-2 mb-1">
+                                        <span class="text-xs font-black text-gray-700">${item.name}</span>
+                                        <button class="edit-name-btn text-amber-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg></button>
                                     </div>
+                                    <p class="text-[9px] font-bold text-amber-600/60 uppercase">${item.weightLabel} | ${item.date} ${item.time}</p>
                                 </div>
                             </div>
-
-                            <div class="flex gap-2">
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-gray-400 font-bold mb-1 uppercase">Cost</p>
-                                    <p class="text-[11px] font-black text-gray-700 leading-none">$${item.rawTwdCost.toLocaleString()}</p>
-                                </div>
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-red-300 font-bold mb-1 uppercase">Fees</p>
-                                    <p class="text-[11px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</p>
-                                </div>
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-blue-300 font-bold mb-1 uppercase">Refund</p>
-                                    <p class="text-[11px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</p>
-                                </div>
-                                <div class="stat-box !border-green-100 !bg-green-50/20">
-                                    <p class="text-[8px] text-green-400 font-black mb-1 uppercase">Profit</p>
-                                    <p class="text-[11px] font-black text-green-600 leading-none">+$${Math.round(item.netProfit).toLocaleString()}</p>
-                                </div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <div class="stat-box"><p class="text-[7px] text-gray-400 font-bold uppercase">Cost</p><p class="text-[10px] font-black">$${item.rawTwdCost}</p></div>
+                                <div class="stat-box"><p class="text-[7px] text-red-300 font-bold uppercase">Fee</p><p class="text-[10px] font-black text-red-400">-$${item.extraFee}</p></div>
+                                <div class="stat-box"><p class="text-[7px] text-blue-300 font-bold uppercase">Ref</p><p class="text-[10px] font-black text-blue-400">+$${item.refundTwd}</p></div>
+                                <div class="stat-box !bg-green-50"><p class="text-[7px] text-green-400 font-black uppercase">Net</p><p class="text-[10px] font-black text-green-600">+$${Math.round(item.netProfit)}</p></div>
                             </div>
                         </div>
                     </div>
                 `;
-
-                // Item Listeners
-                el.querySelector('.card-header').onclick = (e) => {
-                    if (e.target.closest('button')) return;
-                    el.classList.toggle('expanded');
-                };
-
-                el.querySelector('.delete-btn').onclick = (e) => {
-                    e.stopPropagation();
-                    deleteFromFirestore(item.id);
-                };
-
-                if (item.image) {
-                    el.querySelector('.detail-img').onclick = () => {
-                        document.getElementById('fullImage').src = item.image;
-                        document.getElementById('imageModal').style.display = 'flex';
-                    };
-                }
-
-                const displayArea = el.querySelector('.name-display-area');
-                const editArea = el.querySelector('.name-edit-area');
-                const inputField = el.querySelector('.edit-input-field');
-
-                el.querySelector('.edit-name-btn').onclick = () => {
-                    displayArea.classList.add('hidden');
-                    editArea.classList.remove('hidden');
-                    inputField.focus();
-                };
-
-                el.querySelector('.save-name-btn').onclick = () => {
-                    updateNameInFirestore(item.id, inputField.value);
-                };
-
+                el.querySelector('.card-header').onclick = (e) => { if(!e.target.closest('button')) el.classList.toggle('expanded'); };
+                el.querySelector('.delete-btn').onclick = () => { deleteFromFirestore(item.id); };
                 list.appendChild(el);
             });
             document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
         }
 
-        // --- Camera Handling ---
-        const cameraBtn = document.getElementById('cameraBtn');
-        const hiddenInput = document.getElementById('hiddenCameraInput');
-        const previewContainer = document.getElementById('photoPreviewContainer');
-        const previewImg = document.getElementById('photoPreviewImg');
-        const clearPhotoBtn = document.getElementById('clearPhotoBtn');
+        // --- Firebase Functions ---
+        async function saveToFirestore(itemData) {
+            if (!user) return;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id), itemData);
+            } catch(e) { console.error(e); }
+        }
+        async function deleteFromFirestore(id) {
+            if (!user) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', id));
+            } catch(e) { console.error(e); }
+        }
 
-        cameraBtn.onclick = () => hiddenInput.click();
-
-        hiddenInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (re) => {
-                    capturedImageData = re.target.result;
-                    previewImg.src = capturedImageData;
-                    previewContainer.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        clearPhotoBtn.onclick = () => {
-            capturedImageData = null;
-            previewContainer.classList.add('hidden');
-            hiddenInput.value = '';
-        };
-
-        // --- Event Binding ---
-
-        window.onload = async () => {
-            // 安全機制：設置 5 秒超時，超時則顯示手動跳過按鈕
-            setTimeout(() => {
-                if (!isAuthCompleted) {
-                    document.getElementById('forceEntryBtn').classList.remove('hidden');
-                    document.getElementById('loadingStatus').innerText = "Loading taking longer than usual...";
-                }
-            }, 5000);
+        // --- Main Execution ---
+        window.addEventListener('load', async () => {
+            // 超時安全閥：3秒內沒進去就強行開啟
+            setTimeout(hideLoading, 3000);
+            
+            // 立即顯示同步率
+            syncRates();
 
             // 啟動驗證
             await initAuth();
-            syncRates();
-        };
+        });
 
-        // 手動跳過按鈕點擊
-        document.getElementById('forceEntryBtn').onclick = () => {
-            hideLoading();
-        };
+        document.getElementById('forceEntryBtn').onclick = hideLoading;
 
         onAuthStateChanged(auth, (u) => {
             user = u;
             if (user) {
-                // 驗證成功後直接關閉 loading
                 hideLoading();
-
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
                 onSnapshot(q, (snapshot) => {
                     history = snapshot.docs.map(doc => doc.data());
                     history.sort((a, b) => b.id - a.id);
                     renderHistory();
                 }, (err) => {
-                    console.error("Firestore error:", err);
-                    // 如果 Firestore 加載失敗，至少要能讓使用者看到空清單
+                    console.warn("Snapshot error", err);
                     renderHistory();
                 });
             }
         });
 
-        // Input Observers
+        // Input Bindings
         ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput'].forEach(id => {
             document.getElementById(id).oninput = updatePricePreview;
         });
-
         document.getElementById('currency').onchange = updatePricePreview;
-
-        // Weight Tier Selection
         document.querySelectorAll('.weight-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
@@ -631,52 +516,41 @@
             };
         });
 
-        // Add to List
         document.getElementById('addToListBtn').onclick = async () => {
             const item = updatePricePreview();
             if (item) {
                 await saveToFirestore(item);
-                // Reset inputs
                 document.getElementById('foreignPrice').value = '';
                 document.getElementById('itemName').value = '';
                 capturedImageData = null;
-                previewContainer.classList.add('hidden');
+                document.getElementById('photoPreviewContainer').classList.add('hidden');
                 document.getElementById('quickResult').classList.add('hidden');
             }
         };
 
-        // Search
         document.getElementById('searchHistory').oninput = renderHistory;
-        document.getElementById('clearSearchBtn').onclick = () => {
-            document.getElementById('searchHistory').value = '';
-            renderHistory();
-        };
-
-        // Modal Close
-        document.getElementById('imageModal').onclick = () => {
-            document.getElementById('imageModal').style.display = 'none';
-        };
-
-        // Sync Rate Click
         document.getElementById('syncBtn').onclick = syncRates;
-
-        // CSV Export
-        document.getElementById('exportCsvBtn').onclick = () => {
-            if (history.length === 0) return;
-            const headers = ['Date', 'Time', 'Name', 'Currency', 'Foreign Price', 'Rate', 'TWD Cost', 'Final Price', 'Profit'];
-            const rows = history.map(item => [
-                item.date, item.time, item.name, item.currency, item.foreign, 
-                item.bankRate.toFixed(4), item.rawTwdCost, item.finalPrice, item.netProfit
-            ]);
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `YU_ZZZ_History_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        
+        // Camera
+        const camInput = document.getElementById('hiddenCameraInput');
+        document.getElementById('cameraBtn').onclick = () => camInput.click();
+        camInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    capturedImageData = re.target.result;
+                    document.getElementById('photoPreviewImg').src = capturedImageData;
+                    document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
         };
+        document.getElementById('clearPhotoBtn').onclick = () => {
+            capturedImageData = null;
+            document.getElementById('photoPreviewContainer').classList.add('hidden');
+        };
+
     </script>
 </body>
 </html>
