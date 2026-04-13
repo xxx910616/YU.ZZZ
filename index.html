@@ -21,7 +21,6 @@
             background-color: var(--bg-gray); 
             color: var(--deep-black);
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
         
         .color-brand-custom { color: var(--brand-blue-grey); }
@@ -32,7 +31,7 @@
         input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
         .detail-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .history-card.expanded .detail-panel { max-height: 1000px; }
+        .history-card.expanded .detail-panel { max-height: 800px; }
         .history-card.expanded .chevron { transform: rotate(180deg); }
         
         .weight-btn.active {
@@ -57,9 +56,10 @@
         .list-container {
             background-color: var(--list-yellow);
             border-top: 1px solid #FEF3C7;
+            box-shadow: 0 -10px 25px -5px rgba(251, 191, 36, 0.1);
         }
 
-        #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; padding: 20px; }
         
         .clear-search-btn {
             display: none;
@@ -72,30 +72,12 @@
         #searchHistory:not(:placeholder-shown) + .clear-search-btn {
             display: block;
         }
-
-        #loadingOverlay {
-            position: fixed;
-            inset: 0;
-            background: white;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- 加載畫面 -->
-    <div id="loadingOverlay">
-        <h1 class="text-4xl font-black color-brand-custom italic tracking-tighter mb-4 animate-pulse">YU.ZZZ</h1>
-        <div class="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p id="loadingStatus" class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Initializing System...</p>
-        <button id="forceEntryBtn" class="hidden mt-8 px-6 py-2 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full border border-gray-200 uppercase tracking-widest">跳過並進入</button>
-    </div>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative">
-        <!-- 頂部儀表板 -->
+        <!-- Dashboard Header -->
         <div class="p-6 pb-8 bg-[var(--pure-white)] sticky top-0 z-20 shadow-sm border-b border-gray-100 rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
@@ -113,8 +95,8 @@
                     <p class="text-[9px] text-blue-400 font-bold uppercase mb-1">Exchange Rate</p>
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col">
-                            <p id="currentRateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0000</p>
-                            <p id="updateTime" class="text-[8px] text-blue-300 font-mono mt-1">--:--</p>
+                            <p id="currentRateDisplay" class="text-lg font-mono font-bold text-blue-900 leading-none">0.0240</p>
+                            <p id="updateTime" class="text-[8px] text-blue-300 font-mono mt-1">Ready</p>
                         </div>
                         <button id="syncBtn" class="p-2 bg-white text-blue-600 rounded-xl active:scale-90 shadow-sm border border-blue-100">
                             <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -131,7 +113,7 @@
             </div>
         </div>
 
-        <!-- 輸入區域 -->
+        <!-- Inputs Section -->
         <div class="px-6 py-5 space-y-5">
             <div class="grid grid-cols-3 gap-2.5">
                 <div class="space-y-1">
@@ -181,7 +163,7 @@
             </div>
         </div>
 
-        <!-- 計算結果顯示 -->
+        <!-- Calculator Output -->
         <div class="px-6 pb-8 space-y-5">
             <div class="space-y-1">
                 <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
@@ -204,12 +186,12 @@
                             <p class="text-[10px] font-bold text-gray-400 italic flex items-center justify-end gap-1 uppercase">Cost: <span id="resOriginal">+$0</span></p>
                         </div>
                     </div>
-                    <button id="addToListBtn" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg">ADD TO LIST</button>
+                    <button id="addToListBtn" class="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg h-14">ADD TO LIST</button>
                 </div>
             </div>
         </div>
 
-        <!-- 歷史清單 -->
+        <!-- History List -->
         <div class="list-container p-6 rounded-t-[3rem] flex-grow min-h-[400px]">
             <div class="flex items-center gap-3 mb-6 px-1">
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -236,17 +218,18 @@
         </div>
     </div>
 
-    <!-- 圖片彈窗 -->
+    <!-- Modals -->
     <div id="imageModal">
         <img id="fullImage" src="" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl">
     </div>
 
+    <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 配置與初始化
+        // Firebase Setup
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -254,12 +237,11 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'yu-zzz-official';
 
         let user = null;
-        let history = [];
+        let historyData = [];
         let exchangeRates = { KRW: 0.0240, JPY: 0.210 };
         let currentWeightTier = "0";
         let currentWeightLabel = "2kg 以下";
         let capturedImageData = null;
-        let isUIReady = false;
 
         const taxRefundTable = [
             { min: 30000, max: 49999, refund: 1500 },
@@ -277,56 +259,24 @@
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
-        // --- 性能優化：圖片壓縮 ---
-        function compressImage(base64Str, maxWidth = 500) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.src = base64Str;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if (width > maxWidth) {
-                        height = (maxWidth / width) * height;
-                        width = maxWidth;
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // 0.7 質量 JPEG 大幅減小體積
-                };
-            });
-        }
+        // --- Logic Functions ---
 
-        // --- 認證邏輯 ---
-        async function startApp() {
-            const statusText = document.getElementById('loadingStatus');
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth Error", err);
-                statusText.innerText = "Connection slow, retrying...";
-                setTimeout(() => hideLoading(), 3000); // 強制進入防止死鎖
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
             }
         }
 
-        function hideLoading() {
-            if (isUIReady) return;
-            isUIReady = true;
-            const loader = document.getElementById('loadingOverlay');
-            loader.style.transition = 'opacity 0.4s';
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 400);
+        function getTaxRefund(foreignPrice) {
+            if (document.getElementById('currency').value !== 'KRW') return 0;
+            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
+            if (tier) return tier.refund;
+            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
+            return 0;
         }
 
-        // --- 匯率與計算 ---
         async function syncRates() {
             const icon = document.getElementById('syncIcon');
             if (icon) icon.classList.add('animate-spin');
@@ -336,19 +286,11 @@
                 if (data.result === 'success') {
                     exchangeRates.KRW = 1 / data.rates.KRW;
                     exchangeRates.JPY = 1 / data.rates.JPY;
-                    document.getElementById('updateTime').innerText = `${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
+                    document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                     updatePricePreview();
                 }
-            } catch (e) { console.warn("Rate sync failed, using default"); }
-            if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 600);
-        }
-
-        function getTaxRefund(foreignPrice) {
-            if (document.getElementById('currency').value !== 'KRW') return 0;
-            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
-            if (tier) return tier.refund;
-            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
-            return 0;
+            } catch (e) { console.error("Rate fetch failed"); }
+            setTimeout(() => { if(icon) icon.classList.remove('animate-spin'); }, 600);
         }
 
         function updatePricePreview() {
@@ -388,11 +330,14 @@
             document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
 
             const now = new Date();
+            const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
             return {
                 id: Date.now().toString(),
-                timestamp: now.getTime(),
-                date: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`,
-                time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+                timestamp: `${dateStr} ${timeStr}`,
+                date: dateStr,
+                time: timeStr,
                 name: document.getElementById('itemName').value || '未命名產品',
                 image: capturedImageData,
                 currency,
@@ -410,132 +355,215 @@
             };
         }
 
-        // --- UI 渲染 ---
+        // --- Firebase Operations ---
+
+        async function saveToFirestore(itemData) {
+            if (!user) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id);
+                await setDoc(docRef, itemData);
+            } catch(e) { console.error("Save failed", e); }
+        }
+
+        async function deleteFromFirestore(id) {
+            if (!user) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
+                await deleteDoc(docRef);
+            } catch(e) { console.error("Delete failed", e); }
+        }
+
+        async function updateNameInFirestore(id, newName) {
+            if (!user) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
+                await updateDoc(docRef, { name: newName });
+            } catch(e) { console.error("Update failed", e); }
+        }
+
+        // --- Render UI ---
+
         function renderHistory() {
             const list = document.getElementById('historyList');
-            const search = document.getElementById('searchHistory').value.toLowerCase();
+            const searchQuery = document.getElementById('searchHistory').value.toLowerCase();
             list.innerHTML = '';
             let totalProfit = 0;
 
-            const filtered = history.filter(i => i.name.toLowerCase().includes(search));
+            const filteredHistory = historyData.filter(item => item.name.toLowerCase().includes(searchQuery));
 
-            filtered.forEach(item => {
+            filteredHistory.forEach((item) => {
                 totalProfit += item.netProfit;
-                const card = document.createElement('div');
-                card.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden';
-                card.innerHTML = `
+                const el = document.createElement('div');
+                el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden transition-all';
+                el.innerHTML = `
                     <div class="p-5 flex items-center justify-between cursor-pointer card-header">
                         <div class="flex items-center gap-4 min-w-0">
                             <div class="chevron transition-transform text-amber-200">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-black text-black truncate text-[15px] mb-0.5">${item.name}</h3>
-                                <p class="text-[10px] font-mono font-bold text-blue-500">${item.foreign.toLocaleString()} ${item.currency} · ${item.bankRate.toFixed(4)}</p>
-                                <p class="text-[9px] font-mono text-gray-300 mt-0.5">${item.date} ${item.time}</p>
+                                <h3 class="font-black text-black truncate text-[15px] tracking-tight mb-0.5">${item.name}</h3>
+                                <p class="text-[10px] font-mono font-bold text-blue-500 leading-tight">
+                                    ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
+                                </p>
+                                <p class="text-[9px] font-mono font-bold text-gray-300 mt-1 tracking-tight">${item.date} ${item.time}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-4">
                             <div>
-                                <p class="text-[18px] font-black text-gray-900 tabular-nums">$${item.finalPrice.toLocaleString()}</p>
-                                <p class="text-[11px] text-green-600 font-black">+$${Math.round(item.netProfit).toLocaleString()}</p>
+                                <p class="text-[18px] font-black text-gray-900 leading-none tabular-nums">$${item.finalPrice.toLocaleString()}</p>
+                                <p class="text-[11px] text-green-600 font-black mt-1">+$${Math.round(item.netProfit).toLocaleString()}</p>
                             </div>
                             <button class="delete-btn p-2 text-gray-200 hover:text-red-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
                         </div>
                     </div>
-                    <div class="detail-panel bg-amber-50/40 border-t border-amber-50">
+                    
+                    <div class="detail-panel bg-amber-50/50 border-t border-amber-100/50">
                         <div class="p-5 space-y-6">
-                            <div class="flex gap-4 items-center">
-                                ${item.image ? `<img src="${item.image}" class="detail-img w-24 h-24 rounded-2xl object-cover border-2 border-white shadow-sm shrink-0">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-50 flex items-center justify-center text-amber-100 text-[10px] font-bold shrink-0">NO IMG</div>`}
-                                <div class="flex-grow min-w-0">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-sm font-black text-gray-700 truncate">${item.name}</span>
+                            <div class="flex flex-col gap-3">
+                                <label class="text-[9px] font-black text-amber-400 uppercase italic tracking-widest pl-1">Product Details</label>
+                                <div class="flex gap-4 items-center">
+                                    ${item.image ? `<img src="${item.image}" class="detail-img w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md shrink-0 cursor-pointer">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-100 flex items-center justify-center text-amber-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
+                                    <div class="flex-grow min-w-0">
+                                        <label class="text-[8px] font-black text-blue-400 uppercase italic mb-1 block">Product Name</label>
+                                        <div id="name-display-${item.id}" class="name-display-area flex items-center gap-2 mb-2">
+                                            <span class="text-sm font-black text-gray-700 truncate">${item.name}</span>
+                                            <button class="edit-name-btn p-1.5 bg-white rounded-lg shadow-sm text-amber-400 hover:text-amber-500 active:scale-90 transition-all">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div id="name-edit-${item.id}" class="name-edit-area hidden flex items-center gap-2 mb-2">
+                                            <input type="text" value="${item.name}" class="edit-input-field flex-grow p-2.5 bg-white border border-amber-200 rounded-xl text-xs font-bold outline-none shadow-sm text-gray-700">
+                                            <button class="save-name-btn w-9 h-9 bg-green-500 text-white rounded-xl shadow-md active:scale-90 flex items-center justify-center shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
+                                        </div>
                                     </div>
-                                    <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
                                 </div>
                             </div>
+
                             <div class="flex gap-2">
-                                <div class="stat-box"><p class="text-[8px] text-gray-400 font-bold uppercase">Cost</p><p class="text-[11px] font-black text-gray-700">$${item.rawTwdCost.toLocaleString()}</p></div>
-                                <div class="stat-box"><p class="text-[8px] text-red-300 font-bold uppercase">Fees</p><p class="text-[11px] font-black text-red-400">-$${item.extraFee.toLocaleString()}</p></div>
-                                <div class="stat-box"><p class="text-[8px] text-blue-300 font-bold uppercase">Refund</p><p class="text-[11px] font-black text-blue-400">+$${item.refundTwd.toLocaleString()}</p></div>
-                                <div class="stat-box !bg-green-50/30"><p class="text-[8px] text-green-400 font-black uppercase">Profit</p><p class="text-[11px] font-black text-green-600">+$${Math.round(item.netProfit).toLocaleString()}</p></div>
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-gray-400 font-bold mb-1 uppercase">Cost</p>
+                                    <p class="text-[11px] font-black text-gray-700 leading-none">$${item.rawTwdCost.toLocaleString()}</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-red-300 font-bold mb-1 uppercase">Fees</p>
+                                    <p class="text-[11px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="text-[8px] text-blue-300 font-bold mb-1 uppercase">Refund</p>
+                                    <p class="text-[11px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</p>
+                                </div>
+                                <div class="stat-box !border-green-100 !bg-green-50/20">
+                                    <p class="text-[8px] text-green-400 font-black mb-1 uppercase">Profit</p>
+                                    <p class="text-[11px] font-black text-green-600 leading-none">+$${Math.round(item.netProfit).toLocaleString()}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
 
-                card.querySelector('.card-header').onclick = (e) => {
-                    if (!e.target.closest('button')) card.classList.toggle('expanded');
-                };
-                card.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', item.id));
-                if (item.image) card.querySelector('.detail-img').onclick = () => {
-                    document.getElementById('fullImage').src = item.image;
-                    document.getElementById('imageModal').style.display = 'flex';
+                // Item Listeners
+                el.querySelector('.card-header').onclick = (e) => {
+                    if (e.target.closest('button')) return;
+                    el.classList.toggle('expanded');
                 };
 
-                list.appendChild(card);
+                el.querySelector('.delete-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    deleteFromFirestore(item.id);
+                };
+
+                if (item.image) {
+                    el.querySelector('.detail-img').onclick = () => {
+                        document.getElementById('fullImage').src = item.image;
+                        document.getElementById('imageModal').style.display = 'flex';
+                    };
+                }
+
+                const displayArea = el.querySelector('.name-display-area');
+                const editArea = el.querySelector('.name-edit-area');
+                const inputField = el.querySelector('.edit-input-field');
+
+                el.querySelector('.edit-name-btn').onclick = () => {
+                    displayArea.classList.add('hidden');
+                    editArea.classList.remove('hidden');
+                    inputField.focus();
+                };
+
+                el.querySelector('.save-name-btn').onclick = () => {
+                    updateNameInFirestore(item.id, inputField.value);
+                };
+
+                list.appendChild(el);
             });
             document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
         }
 
-        // --- 初始化監聽 ---
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (user) {
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-                onSnapshot(q, (snap) => {
-                    history = snap.docs.map(d => d.data()).sort((a, b) => b.timestamp - a.timestamp);
-                    renderHistory();
-                    hideLoading(); // 收到第一次數據後關閉加載
-                }, () => hideLoading());
-            }
-        });
+        // --- Camera Handling ---
+        const cameraBtn = document.getElementById('cameraBtn');
+        const hiddenInput = document.getElementById('hiddenCameraInput');
+        const previewContainer = document.getElementById('photoPreviewContainer');
+        const previewImg = document.getElementById('photoPreviewImg');
+        const clearPhotoBtn = document.getElementById('clearPhotoBtn');
 
-        // 綁定事件
-        document.getElementById('cameraBtn').onclick = () => document.getElementById('hiddenCameraInput').click();
-        document.getElementById('hiddenCameraInput').onchange = async (e) => {
+        cameraBtn.onclick = () => hiddenInput.click();
+
+        hiddenInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = async (re) => {
-                    const statusText = document.getElementById('loadingStatus'); // 複用 loading 文字顯示處理中
-                    capturedImageData = await compressImage(re.target.result);
-                    document.getElementById('photoPreviewImg').src = capturedImageData;
-                    document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                reader.onload = (re) => {
+                    capturedImageData = re.target.result;
+                    previewImg.src = capturedImageData;
+                    previewContainer.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             }
         };
 
-        document.getElementById('addToListBtn').onclick = async () => {
-            const item = updatePricePreview();
-            if (item && user) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history', item.id), item);
-                document.getElementById('foreignPrice').value = '';
-                document.getElementById('itemName').value = '';
-                capturedImageData = null;
-                document.getElementById('photoPreviewContainer').classList.add('hidden');
-                document.getElementById('quickResult').classList.add('hidden');
-            }
-        };
-
-        document.getElementById('clearPhotoBtn').onclick = () => {
+        clearPhotoBtn.onclick = () => {
             capturedImageData = null;
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
+            previewContainer.classList.add('hidden');
+            hiddenInput.value = '';
         };
 
+        // --- Event Binding ---
+
+        window.onload = async () => {
+            await initAuth();
+            syncRates();
+        };
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+                onSnapshot(q, (snapshot) => {
+                    historyData = snapshot.docs.map(doc => doc.data());
+                    historyData.sort((a, b) => b.id - a.id);
+                    renderHistory();
+                }, (err) => {
+                    console.error("Firestore error:", err);
+                    renderHistory();
+                });
+            }
+        });
+
+        // Input Observers
         ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput'].forEach(id => {
             document.getElementById(id).oninput = updatePricePreview;
         });
-        document.getElementById('currency').onchange = updatePricePreview;
-        document.getElementById('searchHistory').oninput = renderHistory;
-        document.getElementById('clearSearchBtn').onclick = () => { document.getElementById('searchHistory').value = ''; renderHistory(); };
-        document.getElementById('syncBtn').onclick = syncRates;
-        document.getElementById('imageModal').onclick = () => document.getElementById('imageModal').style.display = 'none';
-        document.getElementById('forceEntryBtn').onclick = () => hideLoading();
 
+        document.getElementById('currency').onchange = updatePricePreview;
+
+        // Weight Tier Selection
         document.querySelectorAll('.weight-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
@@ -546,20 +574,52 @@
             };
         });
 
-        document.getElementById('exportCsvBtn').onclick = () => {
-            const rows = history.map(i => [i.date, i.time, i.name, i.currency, i.foreign, i.bankRate.toFixed(4), i.finalPrice, i.netProfit]);
-            const csv = "Date,Time,Name,Currency,Foreign,Rate,Final,Profit\n" + rows.map(r => r.join(",")).join("\n");
-            const link = document.createElement("a");
-            link.href = 'data:text/csv;charset=utf-8,\ufeff' + encodeURIComponent(csv);
-            link.download = `YU_ZZZ_${new Date().toISOString().slice(0,10)}.csv`;
-            link.click();
+        // Add to List
+        document.getElementById('addToListBtn').onclick = async () => {
+            const item = updatePricePreview();
+            if (item) {
+                await saveToFirestore(item);
+                // Reset
+                document.getElementById('foreignPrice').value = '';
+                document.getElementById('itemName').value = '';
+                capturedImageData = null;
+                previewContainer.classList.add('hidden');
+                document.getElementById('quickResult').classList.add('hidden');
+            }
         };
 
-        // 啟動
-        setTimeout(() => document.getElementById('forceEntryBtn').classList.remove('hidden'), 5000);
-        startApp();
-        syncRates();
+        // Search
+        document.getElementById('searchHistory').oninput = renderHistory;
+        document.getElementById('clearSearchBtn').onclick = () => {
+            document.getElementById('searchHistory').value = '';
+            renderHistory();
+        };
 
+        // Modal Close
+        document.getElementById('imageModal').onclick = () => {
+            document.getElementById('imageModal').style.display = 'none';
+        };
+
+        // Sync Rate Click
+        document.getElementById('syncBtn').onclick = syncRates;
+
+        // CSV Export
+        document.getElementById('exportCsvBtn').onclick = () => {
+            if (historyData.length === 0) return;
+            const headers = ['Date', 'Time', 'Name', 'Currency', 'Foreign Price', 'Rate', 'TWD Cost', 'Final Price', 'Profit'];
+            const rows = historyData.map(item => [
+                item.date, item.time, item.name, item.currency, item.foreign, 
+                item.bankRate.toFixed(4), item.rawTwdCost, item.finalPrice, item.netProfit
+            ]);
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `YU_ZZZ_History_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
     </script>
 </body>
 </html>
