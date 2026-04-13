@@ -21,6 +21,7 @@
             background-color: var(--bg-gray); 
             color: var(--deep-black);
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .color-brand-custom { color: var(--brand-blue-grey); }
@@ -147,7 +148,7 @@
                 <label class="text-[9px] font-black text-gray-400 uppercase ml-1 tracking-widest">Product Info</label>
                 <div class="flex gap-2.5">
                     <input type="text" id="itemName" placeholder="輸入產品名稱..." class="w-full p-4 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none shadow-sm">
-                    <button id="cameraBtn" class="px-5 bg-brand-custom text-white rounded-xl active:scale-90 shadow-md flex items-center justify-center">
+                    <button id="cameraBtn" type="button" class="px-5 bg-brand-custom text-white rounded-xl active:scale-95 shadow-md flex items-center justify-center cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                     </button>
                     <input type="file" id="hiddenCameraInput" accept="image/*" capture="environment" class="hidden">
@@ -513,9 +514,13 @@
         const previewImg = document.getElementById('photoPreviewImg');
         const clearPhotoBtn = document.getElementById('clearPhotoBtn');
 
-        cameraBtn.onclick = () => hiddenInput.click();
+        // 改良觸發邏輯，增加點擊回饋
+        cameraBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            hiddenInput.click();
+        });
 
-        hiddenInput.onchange = (e) => {
+        hiddenInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -526,7 +531,7 @@
                 };
                 reader.readAsDataURL(file);
             }
-        };
+        });
 
         clearPhotoBtn.onclick = () => {
             capturedImageData = null;
