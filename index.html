@@ -14,6 +14,7 @@
             --highlight-yellow: #FACC15;
             --list-yellow: #FFFBEB; 
             --brand-blue-grey: #5b7189;
+            --item-border-yellow: #FEF3C7;
         }
 
         body { 
@@ -41,17 +42,15 @@
             border-color: var(--brand-blue-grey) !important;
         }
         
-        .stat-box {
-            flex: 1; 
+        .stat-bar {
             display: flex;
-            flex-direction: column;
-            justify-content: center; 
+            justify-content: space-between;
             align-items: center;
-            height: 64px; 
+            padding: 8px 12px;
             background: white;
-            border-radius: 14px;
-            border: 1px solid #fef3c7;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            border-radius: 10px;
+            border: 1px solid var(--item-border-yellow);
+            margin-bottom: 6px;
         }
 
         .list-container {
@@ -74,14 +73,8 @@
             display: block;
         }
         
-        #quickResult {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #quickResult.hidden {
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
-        }
+        #quickResult { transition: opacity 0.3s ease, transform 0.3s ease; }
+        #quickResult.hidden { display: none; opacity: 0; transform: translateY(10px); }
     </style>
 </head>
 <body class="min-h-screen">
@@ -95,7 +88,7 @@
                     <span class="text-[10px] font-black text-black tracking-[0.3em] mt-1 ml-1 uppercase">Official｜2 0 0 2</span>
                 </div>
                 <div class="text-right flex flex-col justify-center">
-                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">Total Profit</p>
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest text-[10px] mb-1 leading-none">Total Profit</p>
                     <p class="text-4xl font-black color-yellow-main italic leading-none tabular-nums">$<span id="totalProfit">0</span></p>
                 </div>
             </div>
@@ -178,13 +171,11 @@
             <div class="space-y-1">
                 <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
                 <div class="relative">
-                    <!-- 使用 type="text" 配合 inputmode="decimal" 增加手機輸入法的兼容性 -->
                     <input type="text" inputmode="decimal" id="foreignPrice" placeholder="0" class="w-full p-6 pl-8 pr-24 text-5xl font-black rounded-[2rem] outline-none bg-white border border-gray-200 shadow-inner text-left tabular-nums text-gray-500">
                     <span id="priceSuffix" class="absolute right-8 top-1/2 -translate-y-1/2 font-black text-gray-200 text-2xl italic uppercase pointer-events-none">KRW</span>
                 </div>
             </div>
 
-            <!-- 黑色結果區塊 -->
             <div id="quickResult" class="hidden">
                 <div class="bg-[var(--deep-black)] rounded-[2.5rem] p-7 text-white shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-center mb-5">
@@ -198,7 +189,7 @@
                             <p class="text-[10px] font-bold text-gray-400 italic flex items-center justify-end gap-1 uppercase">Cost: <span id="resOriginal">+$0</span></p>
                         </div>
                     </div>
-                    <button id="addToListBtn" class="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg h-14">ADD TO LIST</button>
+                    <button id="addToListBtn" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg rounded-2xl transition-all active:scale-95 uppercase tracking-widest shadow-lg h-14">ADD TO LIST</button>
                 </div>
             </div>
         </div>
@@ -230,18 +221,15 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="imageModal">
         <img id="fullImage" src="" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl">
     </div>
 
-    <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Setup
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -256,44 +244,24 @@
         let capturedImageData = null;
 
         const taxRefundTable = [
-            { min: 30000, max: 49999, refund: 1500 },
-            { min: 50000, max: 74999, refund: 3000 },
-            { min: 75000, max: 99999, refund: 5000 },
-            { min: 100000, max: 124999, refund: 6000 },
-            { min: 125000, max: 149999, refund: 8000 },
-            { min: 150000, max: 174999, refund: 9000 },
-            { min: 175000, max: 199999, refund: 10000 },
-            { min: 200000, max: 224999, refund: 12000 },
-            { min: 225000, max: 249999, refund: 13000 },
-            { min: 250000, max: 274999, refund: 15000 },
-            { min: 275000, max: 299999, refund: 17000 },
-            { min: 300000, max: 499999, refund: 20000 },
+            { min: 30000, max: 49999, refund: 1500 }, { min: 50000, max: 74999, refund: 3000 },
+            { min: 75000, max: 99999, refund: 5000 }, { min: 100000, max: 124999, refund: 6000 },
+            { min: 125000, max: 149999, refund: 8000 }, { min: 150000, max: 174999, refund: 9000 },
+            { min: 175000, max: 199999, refund: 10000 }, { min: 200000, max: 224999, refund: 12000 },
+            { min: 225000, max: 249999, refund: 13000 }, { min: 250000, max: 274999, refund: 15000 },
+            { min: 275000, max: 299999, refund: 17000 }, { min: 300000, max: 499999, refund: 20000 },
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
-        // --- Logic Functions ---
-
         async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) { console.error("Auth Error", e); }
-        }
-
-        function getTaxRefund(foreignPrice) {
-            if (document.getElementById('currency').value !== 'KRW') return 0;
-            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
-            if (tier) return tier.refund;
-            if (foreignPrice >= 1000000) return foreignPrice * 0.06;
-            return 0;
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else { await signInAnonymously(auth); }
         }
 
         async function syncRates() {
             const icon = document.getElementById('syncIcon');
-            if (icon) icon.classList.add('animate-spin');
+            icon?.classList.add('animate-spin');
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/TWD');
                 const data = await res.json();
@@ -302,124 +270,83 @@
                     exchangeRates.JPY = 1 / data.rates.JPY;
                     document.getElementById('currentRateDisplay').innerText = (exchangeRates[document.getElementById('currency').value] || 0.024).toFixed(4);
                     document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
-                    updatePricePreview();
                 }
-            } catch (e) { console.error("Rate fetch failed"); }
-            setTimeout(() => { if(icon) icon.classList.remove('animate-spin'); }, 600);
+            } catch (e) {}
+            setTimeout(() => icon?.classList.remove('animate-spin'), 600);
+        }
+
+        function getTaxRefund(foreignPrice) {
+            if (document.getElementById('currency').value !== 'KRW') return 0;
+            const tier = taxRefundTable.find(t => foreignPrice >= t.min && foreignPrice <= t.max);
+            return tier ? tier.refund : (foreignPrice >= 1000000 ? foreignPrice * 0.06 : 0);
         }
 
         function updatePricePreview() {
-            try {
-                const currency = document.getElementById('currency').value;
-                const bankRate = exchangeRates[currency] || 0.024;
-                const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
-                const foreignPriceInput = document.getElementById('foreignPrice');
-                const foreignPrice = parseFloat(foreignPriceInput.value.replace(/,/g, '')) || 0;
-                const manualCostInput = parseFloat(document.getElementById('manualCost').value) || 0;
-                const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
-                const resultBox = document.getElementById('quickResult');
-                
-                document.getElementById('priceSuffix').innerText = currency;
-                document.getElementById('currentRateDisplay').innerText = bankRate.toFixed(4);
+            const currency = document.getElementById('currency').value;
+            const bankRate = exchangeRates[currency] || 0.024;
+            const profitRate = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
+            const foreignPrice = parseFloat(document.getElementById('foreignPrice').value.replace(/,/g, '')) || 0;
+            const manualCost = parseFloat(document.getElementById('manualCost').value) || 0;
+            const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
+            const resultBox = document.getElementById('quickResult');
+            
+            document.getElementById('priceSuffix').innerText = currency;
+            if (foreignPrice > 0) { resultBox.classList.remove('hidden'); resultBox.style.display = 'block'; }
+            else { resultBox.classList.add('hidden'); resultBox.style.display = 'none'; return null; }
 
-                // 強制切換顯示邏輯：只要大於 0 就一定要出現
-                if (foreignPrice > 0) {
-                    resultBox.classList.remove('hidden');
-                    resultBox.style.display = 'block'; // 手機端加強強制顯示
-                } else {
-                    resultBox.classList.add('hidden');
-                    resultBox.style.display = 'none';
-                    return null;
-                }
+            let weightExtra = 0;
+            if (currentWeightTier === "2-5") weightExtra = 60;
+            else if (currentWeightTier === "5-10") weightExtra = 100;
+            else if (currentWeightTier === "10+") weightExtra = 150;
 
-                let weightExtra = 0;
-                if (currentWeightTier === "2-5") weightExtra = 60;
-                else if (currentWeightTier === "5-10") weightExtra = 100;
-                else if (currentWeightTier === "10+") weightExtra = 150;
+            const rawTwdCost = (foreignPrice * bankRate);
+            const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
+            const finalPrice = Math.round(targetPrice);
+            const extraFee = Math.round(finalPrice * feeRate);
+            const refundKrw = getTaxRefund(foreignPrice);
+            const refundTwd = Math.round(refundKrw * bankRate);
+            const netProfit = finalPrice - rawTwdCost - extraFee - manualCost + refundTwd;
 
-                const rawTwdCost = (foreignPrice * bankRate);
-                const targetPrice = (rawTwdCost / (1 - feeRate - profitRate)) + weightExtra;
-                const finalPrice = Math.round(targetPrice);
-                const extraFee = Math.round(finalPrice * feeRate);
-                const refundKrw = getTaxRefund(foreignPrice);
-                const refundTwd = Math.round(refundKrw * bankRate);
-                const netProfit = finalPrice - rawTwdCost - extraFee - manualCostInput + refundTwd;
+            document.getElementById('resOriginal').innerText = `+$${Math.round(rawTwdCost).toLocaleString()}`;
+            document.getElementById('resExtra').innerText = `-$${extraFee.toLocaleString()}`;
+            document.getElementById('resProfit').innerText = `+$${Math.round(netProfit).toLocaleString()}`;
+            document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
 
-                document.getElementById('resOriginal').innerText = `+$${Math.round(rawTwdCost).toLocaleString()}`;
-                document.getElementById('resExtra').innerText = `-$${extraFee.toLocaleString()}`;
-                document.getElementById('resProfit').innerText = `+$${Math.round(netProfit).toLocaleString()}`;
-                document.getElementById('finalPrice').innerText = `$ ${finalPrice.toLocaleString()}`;
+            const now = new Date();
+            return {
+                id: Date.now().toString(),
+                date: `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`,
+                time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+                name: document.getElementById('itemName').value || '未命名商品',
+                image: capturedImageData,
+                currency, foreign: foreignPrice, bankRate,
+                rawTwdCost: Math.round(rawTwdCost), weightLabel: currentWeightLabel,
+                weightTier: currentWeightTier,
+                refundTwd, finalPrice, extraFee, netProfit, manualCost
+            };
+        }
 
-                const now = new Date();
-                const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-                const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-                return {
-                    id: Date.now().toString(),
-                    timestamp: `${dateStr} ${timeStr}`,
-                    date: dateStr,
-                    time: timeStr,
-                    name: document.getElementById('itemName').value || '未命名產品',
-                    image: capturedImageData,
-                    currency,
-                    foreign: foreignPrice,
-                    bankRate,
-                    rawTwdCost: Math.round(rawTwdCost),
-                    feeRate,
-                    weightExtra,
-                    weightLabel: currentWeightLabel,
-                    refundTwd,
-                    finalPrice: finalPrice,
-                    extraFee: extraFee,
-                    netProfit: netProfit,
-                    manualCostInput
-                };
-            } catch (err) {
-                console.error("Preview Update Error:", err);
-                return null;
+        function getWeightColorClass(tier) {
+            switch(tier) {
+                case "0": return "bg-green-100 text-green-600";
+                case "2-5": return "bg-yellow-100 text-yellow-600";
+                case "5-10": return "bg-orange-100 text-orange-600";
+                case "10+": return "bg-red-100 text-red-600";
+                default: return "bg-blue-50 text-blue-500";
             }
         }
 
-        // --- Firebase Operations ---
-
-        async function saveToFirestore(itemData) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', itemData.id);
-                await setDoc(docRef, itemData);
-            } catch(e) { console.error("Save failed", e); }
-        }
-
-        async function deleteFromFirestore(id) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-                await deleteDoc(docRef);
-            } catch(e) { console.error("Delete failed", e); }
-        }
-
-        async function updateNameInFirestore(id, newName) {
-            if (!user) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', id);
-                await updateDoc(docRef, { name: newName });
-            } catch(e) { console.error("Update failed", e); }
-        }
-
-        // --- Render UI ---
-
         function renderHistory() {
             const list = document.getElementById('historyList');
-            const searchQuery = (document.getElementById('searchHistory').value || '').toLowerCase();
+            const search = (document.getElementById('searchHistory').value || '').toLowerCase();
             list.innerHTML = '';
-            let totalProfit = 0;
+            let total = 0;
 
-            const filteredHistory = historyData.filter(item => (item.name || '').toLowerCase().includes(searchQuery));
-
-            filteredHistory.forEach((item) => {
-                totalProfit += (item.netProfit || 0);
+            historyData.filter(i => (i.name||'').toLowerCase().includes(search)).forEach(item => {
+                total += item.netProfit;
+                const weightClass = getWeightColorClass(item.weightTier || "0");
                 const el = document.createElement('div');
-                el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden transition-all';
+                el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden';
                 el.innerHTML = `
                     <div class="p-5 flex items-center justify-between cursor-pointer card-header">
                         <div class="flex items-center gap-4 min-w-0">
@@ -431,7 +358,7 @@
                                 <p class="text-[10px] font-mono font-bold text-blue-500 leading-tight">
                                     ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
                                 </p>
-                                <p class="text-[9px] font-mono font-bold text-gray-300 mt-1 tracking-tight">${item.date} ${item.time}</p>
+                                <p class="text-[9px] text-gray-400 font-bold block mt-1">${item.date} ${item.time}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-4">
@@ -445,250 +372,112 @@
                         </div>
                     </div>
                     
-                    <div class="detail-panel bg-amber-50/50 border-t border-amber-100/50">
-                        <div class="p-5 space-y-6">
-                            <div class="flex flex-col gap-3">
-                                <label class="text-[9px] font-black text-amber-400 uppercase italic tracking-widest pl-1">Product Details</label>
-                                <div class="flex gap-4 items-center">
-                                    ${item.image ? `<img src="${item.image}" class="detail-img w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md shrink-0 cursor-pointer">` : `<div class="w-24 h-24 bg-white rounded-2xl border border-amber-100 flex items-center justify-center text-amber-200 shrink-0 text-[10px] font-bold">NO IMAGE</div>`}
-                                    <div class="flex-grow min-w-0">
-                                        <label class="text-[8px] font-black text-blue-400 uppercase italic mb-1 block">Product Name</label>
-                                        <div id="name-display-${item.id}" class="name-display-area flex items-center gap-2 mb-2">
-                                            <span class="text-sm font-black text-gray-700 truncate">${item.name}</span>
-                                            <button class="edit-name-btn p-1.5 bg-white rounded-lg shadow-sm text-amber-400 hover:text-amber-500 active:scale-90 transition-all">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
-                                            </button>
-                                        </div>
-                                        <div id="name-edit-${item.id}" class="name-edit-area hidden flex items-center gap-2 mb-2">
-                                            <input type="text" value="${item.name}" class="edit-input-field flex-grow p-2.5 bg-white border border-amber-200 rounded-xl text-xs font-bold outline-none shadow-sm text-gray-700">
-                                            <button class="save-name-btn w-9 h-9 bg-green-500 text-white rounded-xl shadow-md active:scale-90 flex items-center justify-center shrink-0">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                            </button>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase italic">${item.weightLabel}</span>
-                                        </div>
+                    <div class="detail-panel bg-gray-50/50 border-t border-gray-100">
+                        <div class="p-6 flex gap-6">
+                            <!-- Left: Image & Centered Name Info -->
+                            <div class="w-32 shrink-0 flex flex-col items-center gap-3">
+                                <div class="relative">
+                                    ${item.image ? `<img src="${item.image}" class="detail-img w-32 h-32 rounded-2xl object-cover shadow-md border-2 border-white cursor-pointer">` : `<div class="w-32 h-32 bg-white rounded-2xl border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[9px] font-bold uppercase">No Image</div>`}
+                                </div>
+                                <div class="w-full text-center">
+                                    <div id="name-display-${item.id}" class="flex items-center justify-center gap-1 w-full px-1">
+                                        <span class="text-xs font-black text-gray-800 truncate block">${item.name}</span>
+                                        <button class="edit-name-btn p-1 text-amber-400 shrink-0"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg></button>
+                                    </div>
+                                    <div id="name-edit-${item.id}" class="hidden flex gap-1 w-full justify-center px-1">
+                                        <input type="text" value="${item.name}" class="edit-input-field w-full p-1 bg-white border border-blue-200 rounded text-[10px] font-bold min-w-0 text-center">
+                                        <button class="save-name-btn text-blue-500 font-bold text-[9px] shrink-0">OK</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex gap-2">
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-gray-400 font-bold mb-1 uppercase">Cost</p>
-                                    <p class="text-[11px] font-black text-gray-700 leading-none">$${item.rawTwdCost.toLocaleString()}</p>
+                            <!-- Right: Stat Bars -->
+                            <div class="flex-grow">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Calculation Detail</label>
+                                    <span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase ${weightClass}">${item.weightLabel}</span>
                                 </div>
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-red-300 font-bold mb-1 uppercase">Fees</p>
-                                    <p class="text-[11px] font-black text-red-400 leading-none">-$${item.extraFee.toLocaleString()}</p>
+                                <div class="stat-bar">
+                                    <span class="text-[10px] font-black text-gray-700 uppercase">TWD</span>
+                                    <span class="text-[11px] font-black text-gray-700">$${item.rawTwdCost.toLocaleString()}</span>
                                 </div>
-                                <div class="stat-box">
-                                    <p class="text-[8px] text-blue-300 font-bold mb-1 uppercase">Refund</p>
-                                    <p class="text-[11px] font-black text-blue-400 leading-none">+$${item.refundTwd.toLocaleString()}</p>
+                                <div class="stat-bar">
+                                    <span class="text-[10px] font-black text-red-400 uppercase">FEE</span>
+                                    <span class="text-[11px] font-black text-red-400">-$${item.extraFee.toLocaleString()}</span>
                                 </div>
-                                <div class="stat-box !border-green-100 !bg-green-50/20">
-                                    <p class="text-[8px] text-green-400 font-black mb-1 uppercase">Profit</p>
-                                    <p class="text-[11px] font-black text-green-600 leading-none">+$${Math.round(item.netProfit).toLocaleString()}</p>
+                                <div class="stat-bar">
+                                    <span class="text-[10px] font-black text-blue-400 uppercase">TAX</span>
+                                    <span class="text-[11px] font-black text-blue-400">+$${item.refundTwd.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
 
-                // Item Listeners
-                el.querySelector('.card-header').onclick = (e) => {
-                    if (e.target.closest('button')) return;
-                    el.classList.toggle('expanded');
-                };
-
-                el.querySelector('.delete-btn').onclick = (e) => {
-                    e.stopPropagation();
-                    deleteFromFirestore(item.id);
-                };
-
-                if (item.image) {
-                    el.querySelector('.detail-img').onclick = () => {
-                        document.getElementById('fullImage').src = item.image;
-                        document.getElementById('imageModal').style.display = 'flex';
-                    };
-                }
-
-                const displayArea = el.querySelector('.name-display-area');
-                const editArea = el.querySelector('.name-edit-area');
-                const inputField = el.querySelector('.edit-input-field');
-
-                el.querySelector('.edit-name-btn').onclick = () => {
-                    displayArea.classList.add('hidden');
-                    editArea.classList.remove('hidden');
-                    inputField.focus();
-                };
-
-                el.querySelector('.save-name-btn').onclick = () => {
-                    updateNameInFirestore(item.id, inputField.value);
-                };
+                el.querySelector('.card-header').onclick = (e) => { if(!e.target.closest('button')) el.classList.toggle('expanded'); };
+                el.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); if(user) deleteDoc(doc(db,'artifacts',appId,'public','data','history',item.id)); };
+                if(item.image) el.querySelector('.detail-img').onclick = () => { document.getElementById('fullImage').src=item.image; document.getElementById('imageModal').style.display='flex'; };
+                
+                const disp = el.querySelector(`#name-display-${item.id}`);
+                const edit = el.querySelector(`#name-edit-${item.id}`);
+                const inp = el.querySelector('.edit-input-field');
+                el.querySelector('.edit-name-btn').onclick = () => { disp.classList.add('hidden'); edit.classList.remove('hidden'); inp.focus(); };
+                el.querySelector('.save-name-btn').onclick = () => { if(user) updateDoc(doc(db,'artifacts',appId,'public','data','history',item.id), {name: inp.value}); };
 
                 list.appendChild(el);
             });
-            document.getElementById('totalProfit').innerText = Math.round(totalProfit).toLocaleString();
+            document.getElementById('totalProfit').innerText = Math.round(total).toLocaleString();
         }
 
-        // --- Camera Handling ---
-        const cameraBtn = document.getElementById('cameraBtn');
-        const hiddenInput = document.getElementById('hiddenCameraInput');
-        const previewContainer = document.getElementById('photoPreviewContainer');
-        const previewImg = document.getElementById('photoPreviewImg');
-        const clearPhotoBtn = document.getElementById('clearPhotoBtn');
-
-        if (cameraBtn) {
-            cameraBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                hiddenInput.click();
-            });
-        }
-
-        if (hiddenInput) {
-            hiddenInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                        capturedImageData = re.target.result;
-                        previewImg.src = capturedImageData;
-                        previewContainer.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-        }
-
-        if (clearPhotoBtn) {
-            clearPhotoBtn.onclick = () => {
-                capturedImageData = null;
-                previewContainer.classList.add('hidden');
-                hiddenInput.value = '';
-            };
-        }
-
-        // --- Event Binding ---
-
-        window.onload = async () => {
-            await initAuth();
-            syncRates();
-        };
-
+        window.onload = async () => { await initAuth(); syncRates(); };
         onAuthStateChanged(auth, (u) => {
             user = u;
-            if (user) {
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-                onSnapshot(q, (snapshot) => {
-                    historyData = snapshot.docs.map(doc => doc.data());
-                    historyData.sort((a, b) => b.id - a.id);
-                    renderHistory();
-                }, (err) => {
-                    console.error("Firestore error:", err);
-                    renderHistory();
-                });
-            }
-        });
-
-        // 萬能輸入監聽：針對手機瀏覽器各種奇怪的狀態做全面覆蓋
-        const inputIds = ['foreignPrice', 'profitPercent', 'manualCost', 'bankFeeInput', 'currency'];
-        inputIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                ['input', 'keyup', 'change', 'blur', 'focus', 'click'].forEach(evt => {
-                    el.addEventListener(evt, () => {
-                        updatePricePreview();
-                    });
-                });
-            }
-        });
-
-        // 定時檢查監聽 (應對手機輸入法卡死)
-        setInterval(() => {
-            const val = document.getElementById('foreignPrice').value;
-            const isHidden = document.getElementById('quickResult').classList.contains('hidden');
-            if (val && parseFloat(val) > 0 && isHidden) {
-                updatePricePreview();
-            }
-        }, 1000);
-
-        // Weight Tier Selection
-        document.querySelectorAll('.weight-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentWeightTier = btn.dataset.tier;
-                currentWeightLabel = btn.dataset.label;
-                updatePricePreview();
-            };
-        });
-
-        // Add to List
-        const addBtn = document.getElementById('addToListBtn');
-        if (addBtn) {
-            addBtn.onclick = async () => {
-                const item = updatePricePreview();
-                if (item) {
-                    await saveToFirestore(item);
-                    // Reset
-                    document.getElementById('foreignPrice').value = '';
-                    document.getElementById('itemName').value = '';
-                    capturedImageData = null;
-                    if (previewContainer) previewContainer.classList.add('hidden');
-                    document.getElementById('quickResult').classList.add('hidden');
-                    document.getElementById('quickResult').style.display = 'none';
-                }
-            };
-        }
-
-        // Search
-        const searchInput = document.getElementById('searchHistory');
-        if (searchInput) {
-            searchInput.oninput = renderHistory;
-        }
-        
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
-        if (clearSearchBtn) {
-            clearSearchBtn.onclick = () => {
-                document.getElementById('searchHistory').value = '';
+            if(user) onSnapshot(collection(db,'artifacts',appId,'public','data','history'), (s) => {
+                historyData = s.docs.map(d => d.data()).sort((a,b) => b.id - a.id);
                 renderHistory();
-            };
-        }
+            }, (err) => console.error(err));
+        });
 
-        // Modal Close
-        const modal = document.getElementById('imageModal');
-        if (modal) {
-            modal.onclick = () => {
-                modal.style.display = 'none';
-            };
-        }
+        ['foreignPrice','profitPercent','manualCost','bankFeeInput','currency'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePricePreview);
+        });
 
-        // Sync Rate Click
-        const syncBtn = document.getElementById('syncBtn');
-        if (syncBtn) {
-            syncBtn.onclick = syncRates;
-        }
+        document.querySelectorAll('.weight-btn').forEach(btn => btn.onclick = () => {
+            document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active'); currentWeightTier = btn.dataset.tier; currentWeightLabel = btn.dataset.label;
+            updatePricePreview();
+        });
 
-        // CSV Export
-        const exportBtn = document.getElementById('exportCsvBtn');
-        if (exportBtn) {
-            exportBtn.onclick = () => {
-                if (historyData.length === 0) return;
-                const headers = ['Date', 'Time', 'Name', 'Currency', 'Foreign Price', 'Rate', 'TWD Cost', 'Final Price', 'Profit'];
-                const rows = historyData.map(item => [
-                    item.date, item.time, item.name, item.currency, item.foreign, 
-                    item.bankRate.toFixed(4), item.rawTwdCost, item.finalPrice, item.netProfit
-                ]);
-                let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `YU_ZZZ_History_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-        }
+        document.getElementById('cameraBtn').onclick = () => document.getElementById('hiddenCameraInput').click();
+        document.getElementById('hiddenCameraInput').onchange = (e) => {
+            const f = e.target.files[0];
+            if(f) {
+                const r = new FileReader();
+                r.onload = (re) => { capturedImageData = re.target.result; document.getElementById('photoPreviewImg').src = capturedImageData; document.getElementById('photoPreviewContainer').classList.remove('hidden'); };
+                r.readAsDataURL(f);
+            }
+        };
+        document.getElementById('clearPhotoBtn').onclick = () => { capturedImageData = null; document.getElementById('photoPreviewContainer').classList.add('hidden'); };
+
+        document.getElementById('addToListBtn').onclick = async () => {
+            const item = updatePricePreview();
+            if(item && user) {
+                await setDoc(doc(db,'artifacts',appId,'public','data','history',item.id), item);
+                document.getElementById('foreignPrice').value = ''; document.getElementById('itemName').value = ''; capturedImageData = null;
+                document.getElementById('photoPreviewContainer').classList.add('hidden'); document.getElementById('quickResult').classList.add('hidden');
+            }
+        };
+
+        document.getElementById('searchHistory').oninput = renderHistory;
+        document.getElementById('clearSearchBtn').onclick = () => { document.getElementById('searchHistory').value=''; renderHistory(); };
+        document.getElementById('imageModal').onclick = () => document.getElementById('imageModal').style.display='none';
+        document.getElementById('syncBtn').onclick = syncRates;
+        document.getElementById('exportCsvBtn').onclick = () => {
+            if(historyData.length===0) return;
+            const headers = ['Date','Time','Name','Currency','Foreign','Rate','Cost','Price','Profit'];
+            const content = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + historyData.map(i => [i.date,i.time,i.name,i.currency,i.foreign,i.bankRate.toFixed(4),i.rawTwdCost,i.finalPrice,i.netProfit].join(",")).join("\n");
+            const link = document.createElement("a"); link.href = encodeURI(content); link.download = `YU_ZZZ_${new Date().toISOString().split('T')[0]}.csv`; link.click();
+        };
     </script>
 </body>
 </html>
