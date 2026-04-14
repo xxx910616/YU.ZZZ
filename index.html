@@ -46,11 +46,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
+            padding: 10px 14px;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--item-border-yellow);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .list-container {
@@ -60,21 +60,6 @@
         }
 
         #imageModal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; padding: 20px; }
-        
-        .clear-search-btn {
-            display: none;
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-        }
-        #searchHistory:not(:placeholder-shown) + .clear-search-btn {
-            display: block;
-        }
-        
-        #quickResult { transition: opacity 0.3s ease, transform 0.3s ease; }
-        #quickResult.hidden { display: none; opacity: 0; transform: translateY(10px); }
     </style>
 </head>
 <body class="min-h-screen">
@@ -88,7 +73,7 @@
                     <span class="text-[10px] font-black text-black tracking-[0.3em] mt-1 ml-1 uppercase">Official｜2 0 0 2</span>
                 </div>
                 <div class="text-right flex flex-col justify-center">
-                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest text-[10px] mb-1 leading-none">Total Profit</p>
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1 leading-none">Total Profit</p>
                     <p class="text-4xl font-black color-yellow-main italic leading-none tabular-nums">$<span id="totalProfit">0</span></p>
                 </div>
             </div>
@@ -166,7 +151,7 @@
             </div>
         </div>
 
-        <!-- Calculator Output -->
+        <!-- Calculator Output (Always Visible) -->
         <div class="px-6 pb-8 space-y-5">
             <div class="space-y-1">
                 <label class="text-[10px] uppercase font-black text-gray-400 italic block pl-2 tracking-tighter">Local Original Price</label>
@@ -176,7 +161,7 @@
                 </div>
             </div>
 
-            <div id="quickResult" class="hidden">
+            <div id="quickResult">
                 <div class="bg-[var(--deep-black)] rounded-[2.5rem] p-7 text-white shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-center mb-5">
                         <div class="min-w-0 pr-3">
@@ -205,9 +190,6 @@
                 <div class="relative flex-grow">
                     <input type="text" id="searchHistory" placeholder="Search..." class="w-full py-2 pl-8 pr-8 bg-white border border-amber-100 rounded-xl text-[10px] font-bold outline-none shadow-sm focus:border-amber-300 transition-colors">
                     <svg class="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <button id="clearSearchBtn" class="clear-search-btn">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </button>
                 </div>
                 
                 <button id="exportCsvBtn" class="px-4 py-2 bg-white text-green-700 text-[10px] font-black rounded-xl border border-green-100 shadow-sm active:scale-90 transition-all shrink-0 uppercase">CSV</button>
@@ -227,7 +209,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
@@ -236,7 +218,6 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'yu-zzz-official';
 
-        let user = null;
         let historyData = [];
         let exchangeRates = { KRW: 0.0240, JPY: 0.210 };
         let currentWeightTier = "0";
@@ -253,10 +234,21 @@
             { min: 500000, max: 999999, refund: 35000 }
         ];
 
-        async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else { await signInAnonymously(auth); }
+        async function startApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'history'), (snapshot) => {
+                    historyData = snapshot.docs.map(d => d.data()).sort((a,b) => b.id - a.id);
+                    renderHistory();
+                }, (err) => console.error(err));
+                
+                syncRates();
+            } catch (error) { console.error(error); }
         }
 
         async function syncRates() {
@@ -269,7 +261,6 @@
                     exchangeRates.KRW = 1 / data.rates.KRW;
                     exchangeRates.JPY = 1 / data.rates.JPY;
                     document.getElementById('currentRateDisplay').innerText = (exchangeRates[document.getElementById('currency').value] || 0.024).toFixed(4);
-                    document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}`;
                 }
             } catch (e) {}
             setTimeout(() => icon?.classList.remove('animate-spin'), 600);
@@ -288,11 +279,16 @@
             const foreignPrice = parseFloat(document.getElementById('foreignPrice').value.replace(/,/g, '')) || 0;
             const manualCost = parseFloat(document.getElementById('manualCost').value) || 0;
             const feeRate = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
-            const resultBox = document.getElementById('quickResult');
             
             document.getElementById('priceSuffix').innerText = currency;
-            if (foreignPrice > 0) { resultBox.classList.remove('hidden'); resultBox.style.display = 'block'; }
-            else { resultBox.classList.add('hidden'); resultBox.style.display = 'none'; return null; }
+
+            if (foreignPrice <= 0) {
+                document.getElementById('resOriginal').innerText = `+$0`;
+                document.getElementById('resExtra').innerText = `-$0`;
+                document.getElementById('resProfit').innerText = `+$0`;
+                document.getElementById('finalPrice').innerText = `$ 0`;
+                return null;
+            }
 
             let weightExtra = 0;
             if (currentWeightTier === "2-5") weightExtra = 60;
@@ -326,16 +322,6 @@
             };
         }
 
-        function getWeightColorClass(tier) {
-            switch(tier) {
-                case "0": return "bg-green-100 text-green-600";
-                case "2-5": return "bg-yellow-100 text-yellow-600";
-                case "5-10": return "bg-orange-100 text-orange-600";
-                case "10+": return "bg-red-100 text-red-600";
-                default: return "bg-blue-50 text-blue-500";
-            }
-        }
-
         function renderHistory() {
             const list = document.getElementById('historyList');
             const search = (document.getElementById('searchHistory').value || '').toLowerCase();
@@ -344,7 +330,7 @@
 
             historyData.filter(i => (i.name||'').toLowerCase().includes(search)).forEach(item => {
                 total += item.netProfit;
-                const weightClass = getWeightColorClass(item.weightTier || "0");
+                const weightColor = item.weightTier === "0" ? "bg-green-50 text-green-600" : (item.weightTier === "2-5" ? "bg-yellow-50 text-yellow-600" : "bg-orange-50 text-orange-600");
                 const el = document.createElement('div');
                 el.className = 'history-card bg-white rounded-[2rem] shadow-sm border border-amber-100 overflow-hidden';
                 el.innerHTML = `
@@ -355,10 +341,10 @@
                             </div>
                             <div class="min-w-0">
                                 <h3 class="font-black text-black truncate text-[15px] tracking-tight mb-0.5">${item.name}</h3>
+                                <p class="text-[9px] font-bold text-gray-400 mb-1">${item.date} ${item.time}</p>
                                 <p class="text-[10px] font-mono font-bold text-blue-500 leading-tight">
                                     ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
                                 </p>
-                                <p class="text-[9px] text-gray-400 font-bold block mt-1">${item.date} ${item.time}</p>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-4">
@@ -374,39 +360,35 @@
                     
                     <div class="detail-panel bg-gray-50/50 border-t border-gray-100">
                         <div class="p-6 flex gap-6">
-                            <!-- Left: Image & Centered Name Info -->
-                            <div class="w-32 shrink-0 flex flex-col items-center gap-3">
-                                <div class="relative">
-                                    ${item.image ? `<img src="${item.image}" class="detail-img w-32 h-32 rounded-2xl object-cover shadow-md border-2 border-white cursor-pointer">` : `<div class="w-32 h-32 bg-white rounded-2xl border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[9px] font-bold uppercase">No Image</div>`}
-                                </div>
+                            <div class="w-28 shrink-0 flex flex-col items-center gap-3">
+                                ${item.image ? `<img src="${item.image}" class="detail-img w-28 h-28 rounded-2xl object-cover shadow-md border-2 border-white cursor-pointer">` : `<div class="w-28 h-28 bg-white rounded-2xl border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[9px] font-bold">NO IMAGE</div>`}
                                 <div class="w-full text-center">
-                                    <div id="name-display-${item.id}" class="flex items-center justify-center gap-1 w-full px-1">
-                                        <span class="text-xs font-black text-gray-800 truncate block">${item.name}</span>
-                                        <button class="edit-name-btn p-1 text-amber-400 shrink-0"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg></button>
+                                    <div id="name-display-${item.id}" class="flex items-center justify-center gap-1">
+                                        <span class="text-[10px] font-black text-gray-800 truncate">${item.name}</span>
+                                        <button class="edit-name-btn p-1 text-amber-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg></button>
                                     </div>
-                                    <div id="name-edit-${item.id}" class="hidden flex gap-1 w-full justify-center px-1">
-                                        <input type="text" value="${item.name}" class="edit-input-field w-full p-1 bg-white border border-blue-200 rounded text-[10px] font-bold min-w-0 text-center">
-                                        <button class="save-name-btn text-blue-500 font-bold text-[9px] shrink-0">OK</button>
+                                    <div id="name-edit-${item.id}" class="hidden flex gap-1 w-full">
+                                        <input type="text" value="${item.name}" class="edit-input-field w-full p-1 bg-white border border-blue-200 rounded text-[10px] font-bold text-center">
+                                        <button class="save-name-btn text-blue-500 font-bold text-[9px]">OK</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Right: Stat Bars -->
                             <div class="flex-grow">
                                 <div class="flex items-center justify-between mb-2">
-                                    <label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Calculation Detail</label>
-                                    <span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase ${weightClass}">${item.weightLabel}</span>
+                                    <label class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Details</label>
+                                    <span class="text-[9px] font-black px-2 py-0.5 rounded-md ${weightColor}">${item.weightLabel}</span>
                                 </div>
                                 <div class="stat-bar">
-                                    <span class="text-[10px] font-black text-gray-700 uppercase">TWD</span>
-                                    <span class="text-[11px] font-black text-gray-700">$${item.rawTwdCost.toLocaleString()}</span>
+                                    <span class="text-[10px] font-black text-yellow-500">TWD</span>
+                                    <span class="text-[11px] font-black text-yellow-500">$${item.rawTwdCost.toLocaleString()}</span>
                                 </div>
                                 <div class="stat-bar">
-                                    <span class="text-[10px] font-black text-red-400 uppercase">FEE</span>
+                                    <span class="text-[10px] font-black text-red-400">FEES</span>
                                     <span class="text-[11px] font-black text-red-400">-$${item.extraFee.toLocaleString()}</span>
                                 </div>
                                 <div class="stat-bar">
-                                    <span class="text-[10px] font-black text-blue-400 uppercase">TAX</span>
+                                    <span class="text-[10px] font-black text-blue-400">TAX</span>
                                     <span class="text-[11px] font-black text-blue-400">+$${item.refundTwd.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -415,28 +397,21 @@
                 `;
 
                 el.querySelector('.card-header').onclick = (e) => { if(!e.target.closest('button')) el.classList.toggle('expanded'); };
-                el.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); if(user) deleteDoc(doc(db,'artifacts',appId,'public','data','history',item.id)); };
+                el.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); deleteDoc(doc(db,'artifacts',appId,'public','data','history',item.id)); };
                 if(item.image) el.querySelector('.detail-img').onclick = () => { document.getElementById('fullImage').src=item.image; document.getElementById('imageModal').style.display='flex'; };
                 
                 const disp = el.querySelector(`#name-display-${item.id}`);
                 const edit = el.querySelector(`#name-edit-${item.id}`);
                 const inp = el.querySelector('.edit-input-field');
                 el.querySelector('.edit-name-btn').onclick = () => { disp.classList.add('hidden'); edit.classList.remove('hidden'); inp.focus(); };
-                el.querySelector('.save-name-btn').onclick = () => { if(user) updateDoc(doc(db,'artifacts',appId,'public','data','history',item.id), {name: inp.value}); };
+                el.querySelector('.save-name-btn').onclick = () => { updateDoc(doc(db,'artifacts',appId,'public','data','history',item.id), {name: inp.value}); };
 
                 list.appendChild(el);
             });
             document.getElementById('totalProfit').innerText = Math.round(total).toLocaleString();
         }
 
-        window.onload = async () => { await initAuth(); syncRates(); };
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if(user) onSnapshot(collection(db,'artifacts',appId,'public','data','history'), (s) => {
-                historyData = s.docs.map(d => d.data()).sort((a,b) => b.id - a.id);
-                renderHistory();
-            }, (err) => console.error(err));
-        });
+        window.onload = startApp;
 
         ['foreignPrice','profitPercent','manualCost','bankFeeInput','currency'].forEach(id => {
             document.getElementById(id).addEventListener('input', updatePricePreview);
@@ -461,15 +436,15 @@
 
         document.getElementById('addToListBtn').onclick = async () => {
             const item = updatePricePreview();
-            if(item && user) {
+            if(item) {
                 await setDoc(doc(db,'artifacts',appId,'public','data','history',item.id), item);
                 document.getElementById('foreignPrice').value = ''; document.getElementById('itemName').value = ''; capturedImageData = null;
-                document.getElementById('photoPreviewContainer').classList.add('hidden'); document.getElementById('quickResult').classList.add('hidden');
+                document.getElementById('photoPreviewContainer').classList.add('hidden'); 
+                updatePricePreview(); // Reset values to 0
             }
         };
 
         document.getElementById('searchHistory').oninput = renderHistory;
-        document.getElementById('clearSearchBtn').onclick = () => { document.getElementById('searchHistory').value=''; renderHistory(); };
         document.getElementById('imageModal').onclick = () => document.getElementById('imageModal').style.display='none';
         document.getElementById('syncBtn').onclick = syncRates;
         document.getElementById('exportCsvBtn').onclick = () => {
