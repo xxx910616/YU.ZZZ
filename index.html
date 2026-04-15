@@ -101,8 +101,8 @@
 <body class="min-h-screen">
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative no-scrollbar">
-        <!-- Header -->
-        <div class="p-6 pb-8 bg-[var(--pure-white)] sticky top-0 z-40 shadow-sm border-b border-[#E8E6E0] rounded-b-[2.5rem]">
+        <!-- Header (已移除 sticky，改為隨頁面滑動) -->
+        <div class="p-6 pb-8 bg-[var(--pure-white)] z-40 shadow-sm border-b border-[#E8E6E0] rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
                     <h1 class="text-5xl font-black color-brand-custom italic tracking-tighter leading-none">YU.ZZZ</h1>
@@ -268,11 +268,7 @@
             else if (currentWeightTier === "10+") weightExtra = 150;
 
             const costTwd = foreign * rate;
-            
-            // 修正計算邏輯：手續費 = TWD 成本 * 1.5% (bankFee)
             const fee = Math.round(costTwd * bankFee);
-            
-            // 建議售價計算 (公式包含獲利與重量加價)
             const target = (costTwd / (1 - bankFee - profitP)) + weightExtra;
             const final = Math.round(target);
             
@@ -283,7 +279,6 @@
                 refundTwd = Math.round(refundKrw * rate);
             }
 
-            // 最終利潤計算
             const profit = final - costTwd - fee - manual + refundTwd;
 
             document.getElementById('finalPrice').innerText = `$ ${final.toLocaleString()}`;
@@ -322,6 +317,15 @@
             renderHistory();
         }
 
+        function updateItemName(id, newName) {
+            const idx = historyData.findIndex(item => item.id === id);
+            if (idx !== -1) {
+                historyData[idx].name = newName;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
+                renderHistory(); 
+            }
+        }
+
         function renderHistory() {
             const list = document.getElementById('historyList');
             const search = (document.getElementById('searchHistory').value || '').toLowerCase();
@@ -346,13 +350,10 @@
                     <div class="p-5 flex items-center justify-between card-header cursor-pointer active-scale relative z-10">
                         <div class="flex items-center gap-4">
                             <div class="chevron transition-transform text-[#B7B7A4] text-xs">▼</div>
-                            <div>
-                                <h3 class="font-black text-base text-[var(--brand-blue)]">${item.name}</h3>
+                            <div class="overflow-hidden">
+                                <h3 class="font-black text-base text-[var(--brand-blue)] truncate max-w-[150px]">${item.name}</h3>
                                 <p class="text-[10px] text-[#A3B18A] font-bold uppercase">
                                     ${item.foreign.toLocaleString()} ${item.currency} · RATE ${item.bankRate.toFixed(4)}
-                                </p>
-                                <p class="text-[9px] text-[#A5A5A5] font-bold uppercase tracking-wider mt-0.5">
-                                    ${item.date} ${item.time}
                                 </p>
                             </div>
                         </div>
@@ -366,21 +367,27 @@
                     </div>
                     
                     <div class="detail-panel border-t border-[#F5F5F3] px-6">
+                        <div class="mb-4">
+                            <label class="text-[9px] font-black text-[#B7B7A4] uppercase tracking-widest block mb-1 ml-1">Edit Name</label>
+                            <input type="text" class="edit-name-input w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold outline-none text-[var(--brand-blue)]" value="${item.name}">
+                        </div>
+
                         <div class="flex gap-6 items-start">
                             <div class="flex flex-col items-center gap-3">
-                                <div class="w-32 h-32 rounded-3xl overflow-hidden bg-white border border-dashed border-[#D5D1C5] flex items-center justify-center relative">
+                                <div class="w-32 h-32 rounded-3xl overflow-hidden bg-white border border-dashed border-[#D5D1C5] flex items-center justify-center relative shadow-inner cursor-pointer image-tap">
                                     ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<span class="text-[10px] text-[#B7B7A4] font-bold uppercase tracking-widest text-center">No Image</span>`}
                                 </div>
+                                <div class="text-[9px] font-bold text-[#A5A5A5]">${item.date} ${item.time}</div>
                             </div>
 
                             <div class="flex-grow">
                                 <div class="flex justify-between items-center mb-3">
-                                    <span class="text-[10px] font-black text-[#B7B7A4] uppercase tracking-widest">Details</span>
+                                    <span class="text-[10px] font-black text-[#B7B7A4] uppercase tracking-widest">Pricing</span>
                                     <span class="px-3 py-1 ${currentTierStyle} rounded-lg text-[9px] font-black uppercase tracking-wider">${item.weightLabel}</span>
                                 </div>
                                 
                                 <div class="stat-box">
-                                    <span class="text-[10px] font-black text-[var(--highlight-yellow)] uppercase italic">TWD</span>
+                                    <span class="text-[10px] font-black text-[var(--highlight-yellow)] uppercase italic">TWD Cost</span>
                                     <span class="text-xs font-black text-[var(--highlight-yellow)]">$${item.rawTwdCost.toLocaleString()}</span>
                                 </div>
                                 
@@ -390,7 +397,7 @@
                                 </div>
                                 
                                 <div class="stat-box">
-                                    <span class="text-[10px] font-black text-[var(--morandi-blue)] uppercase italic">Tax</span>
+                                    <span class="text-[10px] font-black text-[var(--morandi-blue)] uppercase italic">Tax Refund</span>
                                     <span class="text-xs font-black text-[var(--morandi-blue)]">+$${(item.refundTwd || 0).toLocaleString()}</span>
                                 </div>
                             </div>
@@ -398,6 +405,17 @@
                     </div>
                 `;
                 
+                const editInput = el.querySelector('.edit-name-input');
+                editInput.addEventListener('change', (e) => updateItemName(item.id, e.target.value));
+                editInput.addEventListener('click', (e) => e.stopPropagation()); 
+
+                if(item.image) {
+                    el.querySelector('.image-tap').onclick = () => {
+                        document.getElementById('fullImage').src = item.image;
+                        document.getElementById('imageModal').style.display = 'flex';
+                    };
+                }
+
                 el.querySelector('.card-header').onclick = (e) => { 
                     if(!e.target.closest('.del-btn')) el.closest('.history-card').classList.toggle('expanded'); 
                 };
