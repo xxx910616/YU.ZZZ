@@ -7,21 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            /* 顏色調整 */
-            --bg-gray: #F5F5F3;           /* 淺杏灰背景 */
-            --soft-blue: #F0F4F7;         /* 淺藍灰底色 */
-            --deep-navy: #5b7189;         /* 指定的深藍色 #5b7189 */
-            --pure-white: #FFFFFF;        /* 純白 */
-            --highlight-yellow: #E9C46A;  /* 莫蘭迪金黃 */
-            --list-light-yellow: #F9F7ED; /* 清單底色：淺米黃 */
-            --brand-blue: #5b7189;        /* 品牌色 */
-            --item-border: #E8E6E0;       /* 邊框色 */
-            
-            /* 輔助色 */
-            --morandi-red: #D67A6B;       /* 莫蘭迪磚紅 */
-            --morandi-green: #81B29A;     /* 莫蘭迪鼠尾草綠 */
-            --morandi-blue: #8E9AAF;      /* 莫蘭迪淺藍 */
-            --text-grey: #5E6472;         /* 深灰文字 */
+            --bg-gray: #F5F5F3;
+            --soft-blue: #F0F4F7;
+            --deep-navy: #5b7189;
+            --pure-white: #FFFFFF;
+            --highlight-yellow: #E9C46A;
+            --list-light-yellow: #F9F7ED;
+            --brand-blue: #5b7189;
+            --item-border: #E8E6E0;
+            --morandi-red: #D67A6B;
+            --morandi-green: #81B29A;
+            --morandi-blue: #8E9AAF;
+            --text-grey: #5E6472;
         }
 
         body { 
@@ -39,13 +36,11 @@
         input::-webkit-outer-spin-button, 
         input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* 歷史清單卡片樣式 */
         .history-card {
             transition: all 0.3s ease;
             background-color: var(--pure-white);
         }
         
-        /* 展開動畫 */
         .detail-panel { 
             max-height: 0; 
             overflow: hidden; 
@@ -67,7 +62,6 @@
             padding-bottom: 1rem;
         }
 
-        /* 重量按鈕 active 樣式 */
         .weight-btn.active {
             background-color: var(--deep-navy) !important; 
             color: var(--pure-white) !important;
@@ -75,7 +69,14 @@
             box-shadow: 0 4px 6px rgba(91, 113, 137, 0.2);
         }
         
-        /* 詳細資料圓角框 */
+        /* 純換匯按鈕 active 樣式：使用明顯的莫蘭迪藍色 */
+        #exchangeOnlyBtn.active {
+            background-color: var(--morandi-blue) !important;
+            color: white !important;
+            border-color: var(--morandi-blue) !important;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
         .stat-box {
             display: flex;
             justify-content: space-between;
@@ -101,7 +102,7 @@
 <body class="min-h-screen">
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col relative no-scrollbar">
-        <!-- Header (已移除 sticky，改為隨頁面滑動) -->
+        <!-- Header -->
         <div class="p-6 pb-8 bg-[var(--pure-white)] z-40 shadow-sm border-b border-[#E8E6E0] rounded-b-[2.5rem]">
             <div class="flex justify-between items-start mb-6">
                 <div class="flex flex-col">
@@ -136,21 +137,27 @@
 
         <!-- Input Fields -->
         <div class="px-6 py-5 space-y-5">
-            <div class="grid grid-cols-3 gap-2.5">
-                <div>
+            <div class="grid grid-cols-4 gap-2.5">
+                <div class="col-span-1">
                     <label class="text-[9px] font-black text-[#A5A5A5] uppercase ml-1">Currency</label>
                     <select id="currency" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none shadow-sm text-[#5E6472]">
                         <option value="KRW">KRW 🇰🇷</option>
                         <option value="JPY">JPY 🇯🇵</option>
                     </select>
                 </div>
-                <div>
+                <div class="col-span-1">
                     <label class="text-[9px] font-black text-[#A5A5A5] uppercase ml-1">Profit %</label>
                     <input type="number" id="profitPercent" value="12" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none text-[#5E6472]">
                 </div>
-                <div>
+                <div class="col-span-1">
                     <label class="text-[9px] font-black text-[#A5A5A5] uppercase ml-1">Extra cost</label>
                     <input type="number" id="manualCost" value="0" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none text-[#5E6472]">
+                </div>
+                <div class="col-span-1 flex flex-col">
+                    <label class="text-[9px] font-black text-[#A5A5A5] uppercase ml-1 opacity-0">Action</label>
+                    <button id="exchangeOnlyBtn" class="flex-grow p-3 bg-white border border-gray-200 rounded-xl text-[10px] font-black shadow-sm text-[#5E6472] active-scale flex items-center justify-center leading-tight">
+                        純換匯
+                    </button>
                 </div>
             </div>
 
@@ -233,6 +240,11 @@
         let currentWeightTier = "0";
         let currentWeightLabel = "2kg 以下";
         let capturedImageData = null;
+        let isExchangeOnlyMode = false;
+        
+        // 紀錄切換前的設定，用於恢復
+        let lastUserProfit = 12;
+        let lastUserManual = 0;
 
         const taxRefundTable = [
             { min: 30000, max: 49999, refund: 1500 }, { min: 50000, max: 74999, refund: 3000 },
@@ -248,10 +260,19 @@
             const currency = document.getElementById('currency').value;
             const rate = exchangeRates[currency] || 0.024;
             const bankFee = (parseFloat(document.getElementById('bankFeeInput').value) || 1.5) / 100;
-            const profitP = (parseFloat(document.getElementById('profitPercent').value) || 12) / 100;
-            const foreign = parseFloat(document.getElementById('foreignPrice').value) || 0;
-            const manual = parseFloat(document.getElementById('manualCost').value) || 0;
+            
+            let profitP = (parseFloat(document.getElementById('profitPercent').value) || 0) / 100;
+            let manual = parseFloat(document.getElementById('manualCost').value) || 0;
+            let weightExtra = 0;
 
+            // 如果不是純換匯模式，才計算重量加價
+            if (!isExchangeOnlyMode) {
+                if (currentWeightTier === "2-5") weightExtra = 60;
+                else if (currentWeightTier === "5-10") weightExtra = 100;
+                else if (currentWeightTier === "10+") weightExtra = 150;
+            }
+            
+            const foreign = parseFloat(document.getElementById('foreignPrice').value) || 0;
             document.getElementById('priceSuffix').innerText = currency;
 
             if (foreign <= 0) {
@@ -262,14 +283,12 @@
                 return null;
             }
 
-            let weightExtra = 0;
-            if (currentWeightTier === "2-5") weightExtra = 60;
-            else if (currentWeightTier === "5-10") weightExtra = 100;
-            else if (currentWeightTier === "10+") weightExtra = 150;
-
             const costTwd = foreign * rate;
             const fee = Math.round(costTwd * bankFee);
-            const target = (costTwd / (1 - bankFee - profitP)) + weightExtra;
+            
+            // 公式調整：確保 (1 - bankFee - profitP) 不為零
+            const denominator = Math.max(0.01, 1 - bankFee - profitP);
+            const target = (costTwd / denominator) + weightExtra;
             const final = Math.round(target);
             
             let refundTwd = 0;
@@ -291,11 +310,11 @@
                 id: Date.now().toString(),
                 date: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
                 time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-                name: document.getElementById('itemName').value || '未命名商品',
+                name: document.getElementById('itemName').value || (isExchangeOnlyMode ? '純換匯交易' : '未命名商品'),
                 image: capturedImageData,
                 currency, foreign, bankRate: rate,
-                rawTwdCost: Math.round(costTwd), weightLabel: currentWeightLabel,
-                weightTier: currentWeightTier, refundTwd, finalPrice: final, netProfit: profit, manualCost: manual, fee
+                rawTwdCost: Math.round(costTwd), weightLabel: isExchangeOnlyMode ? "不計重" : currentWeightLabel,
+                weightTier: isExchangeOnlyMode ? "0" : currentWeightTier, refundTwd, finalPrice: final, netProfit: profit, manualCost: manual, fee
             };
         }
 
@@ -310,20 +329,6 @@
                     calculate();
                 }
             } catch (e) { console.error("匯率更新失敗", e); }
-        }
-
-        function saveToStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
-            renderHistory();
-        }
-
-        function updateItemName(id, newName) {
-            const idx = historyData.findIndex(item => item.id === id);
-            if (idx !== -1) {
-                historyData[idx].name = newName;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
-                renderHistory(); 
-            }
         }
 
         function renderHistory() {
@@ -343,7 +348,6 @@
                 totalProfitSum += (item.netProfit || 0);
                 const el = document.createElement('div');
                 el.className = 'history-card rounded-3xl shadow-sm border border-[var(--item-border)] overflow-hidden mb-3';
-                
                 const currentTierStyle = tierStyles[item.weightTier] || tierStyles["0"];
 
                 el.innerHTML = `
@@ -365,13 +369,11 @@
                             <div class="del-btn text-[#E9E6DD] hover:text-[var(--morandi-red)] text-sm p-2">✕</div>
                         </div>
                     </div>
-                    
                     <div class="detail-panel border-t border-[#F5F5F3] px-6">
                         <div class="mb-4">
                             <label class="text-[9px] font-black text-[#B7B7A4] uppercase tracking-widest block mb-1 ml-1">Edit Name</label>
                             <input type="text" class="edit-name-input w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold outline-none text-[var(--brand-blue)]" value="${item.name}">
                         </div>
-
                         <div class="flex gap-6 items-start">
                             <div class="flex flex-col items-center gap-3">
                                 <div class="w-32 h-32 rounded-3xl overflow-hidden bg-white border border-dashed border-[#D5D1C5] flex items-center justify-center relative shadow-inner cursor-pointer image-tap">
@@ -379,23 +381,19 @@
                                 </div>
                                 <div class="text-[9px] font-bold text-[#A5A5A5]">${item.date} ${item.time}</div>
                             </div>
-
                             <div class="flex-grow">
                                 <div class="flex justify-between items-center mb-3">
                                     <span class="text-[10px] font-black text-[#B7B7A4] uppercase tracking-widest">Pricing</span>
                                     <span class="px-3 py-1 ${currentTierStyle} rounded-lg text-[9px] font-black uppercase tracking-wider">${item.weightLabel}</span>
                                 </div>
-                                
                                 <div class="stat-box">
                                     <span class="text-[10px] font-black text-[var(--highlight-yellow)] uppercase italic">TWD Cost</span>
                                     <span class="text-xs font-black text-[var(--highlight-yellow)]">$${item.rawTwdCost.toLocaleString()}</span>
                                 </div>
-                                
                                 <div class="stat-box">
                                     <span class="text-[10px] font-black text-[var(--morandi-red)] uppercase italic">Fees</span>
                                     <span class="text-xs font-black text-[var(--morandi-red)]">-$${item.fee.toLocaleString()}</span>
                                 </div>
-                                
                                 <div class="stat-box">
                                     <span class="text-[10px] font-black text-[var(--morandi-blue)] uppercase italic">Tax Refund</span>
                                     <span class="text-xs font-black text-[var(--morandi-blue)]">+$${(item.refundTwd || 0).toLocaleString()}</span>
@@ -406,37 +404,45 @@
                 `;
                 
                 const editInput = el.querySelector('.edit-name-input');
-                editInput.addEventListener('change', (e) => updateItemName(item.id, e.target.value));
-                editInput.addEventListener('click', (e) => e.stopPropagation()); 
-
-                if(item.image) {
-                    el.querySelector('.image-tap').onclick = () => {
-                        document.getElementById('fullImage').src = item.image;
-                        document.getElementById('imageModal').style.display = 'flex';
-                    };
-                }
-
-                el.querySelector('.card-header').onclick = (e) => { 
-                    if(!e.target.closest('.del-btn')) el.closest('.history-card').classList.toggle('expanded'); 
+                editInput.onchange = (e) => {
+                    const idx = historyData.findIndex(h => h.id === item.id);
+                    if(idx !== -1) historyData[idx].name = e.target.value;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
+                    renderHistory();
                 };
-                el.querySelector('.del-btn').onclick = (e) => { 
-                    e.stopPropagation(); 
-                    historyData = historyData.filter(h => h.id !== item.id);
-                    saveToStorage();
+                editInput.onclick = (e) => e.stopPropagation();
+                if(item.image) el.querySelector('.image-tap').onclick = () => {
+                    document.getElementById('fullImage').src = item.image;
+                    document.getElementById('imageModal').style.display = 'flex';
                 };
+                el.querySelector('.card-header').onclick = (e) => { if(!e.target.closest('.del-btn')) el.classList.toggle('expanded'); };
+                el.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); historyData = historyData.filter(h => h.id !== item.id); localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData)); renderHistory(); };
                 list.appendChild(el);
             });
             document.getElementById('totalProfit').innerText = Math.round(totalProfitSum).toLocaleString();
         }
 
-        const inputs = ['foreignPrice','profitPercent','manualCost','bankFeeInput','currency','itemName'];
+        // 輸入監聽
+        const inputs = ['foreignPrice','profitPercent','manualCost','bankFeeInput','currency'];
         inputs.forEach(id => {
-            const el = document.getElementById(id);
-            el.addEventListener('input', calculate);
-            el.addEventListener('change', calculate);
+            document.getElementById(id).oninput = () => {
+                // 如果在輸入過程中，手動改了利潤，就視為取消「純換匯」狀態
+                if (isExchangeOnlyMode && (id === 'profitPercent' || id === 'manualCost')) {
+                    isExchangeOnlyMode = false;
+                    document.getElementById('exchangeOnlyBtn').classList.remove('active');
+                }
+                calculate();
+            };
         });
 
+        // 重量按鈕
         document.querySelectorAll('.weight-btn').forEach(btn => btn.onclick = () => {
+            if (isExchangeOnlyMode) {
+                isExchangeOnlyMode = false;
+                document.getElementById('exchangeOnlyBtn').classList.remove('active');
+                document.getElementById('profitPercent').value = lastUserProfit;
+                document.getElementById('manualCost').value = lastUserManual;
+            }
             document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active'); 
             currentWeightTier = btn.dataset.tier; 
@@ -444,18 +450,58 @@
             calculate();
         });
 
+        // 純換匯按鈕
+        document.getElementById('exchangeOnlyBtn').onclick = function() {
+            isExchangeOnlyMode = !isExchangeOnlyMode;
+            this.classList.toggle('active', isExchangeOnlyMode);
+            
+            const profitInput = document.getElementById('profitPercent');
+            const manualInput = document.getElementById('manualCost');
+
+            if (isExchangeOnlyMode) {
+                // 進入模式：紀錄原本數值並清零
+                lastUserProfit = profitInput.value;
+                lastUserManual = manualInput.value;
+                profitInput.value = 0;
+                manualInput.value = 0;
+                document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
+            } else {
+                // 退出模式：恢復數值與重量選擇
+                profitInput.value = lastUserProfit;
+                manualInput.value = lastUserManual;
+                const targetBtn = document.querySelector(`.weight-btn[data-tier="${currentWeightTier}"]`);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+            calculate();
+        };
+
+        // 加入清單
         document.getElementById('addToListBtn').onclick = () => {
             const item = calculate(); 
             if(!item || item.foreign <= 0) return;
             historyData.unshift(item);
-            saveToStorage();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
+            renderHistory();
+            
+            // 重置
             document.getElementById('foreignPrice').value = '';
             document.getElementById('itemName').value = '';
             capturedImageData = null;
             document.getElementById('photoPreviewContainer').classList.add('hidden');
+            
+            // 自動恢復原本設定 (退出純換匯模式)
+            if (isExchangeOnlyMode) {
+                isExchangeOnlyMode = false;
+                document.getElementById('exchangeOnlyBtn').classList.remove('active');
+                document.getElementById('profitPercent').value = lastUserProfit;
+                document.getElementById('manualCost').value = lastUserManual;
+                const targetBtn = document.querySelector(`.weight-btn[data-tier="${currentWeightTier}"]`);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
             calculate();
         };
 
+        // 相機功能
         document.getElementById('cameraBtn').onclick = () => document.getElementById('hiddenCameraInput').click();
         document.getElementById('hiddenCameraInput').onchange = (e) => {
             const f = e.target.files[0];
@@ -479,11 +525,7 @@
         document.getElementById('syncBtn').onclick = syncRates;
         document.getElementById('searchHistory').oninput = renderHistory;
 
-        window.onload = () => { 
-            syncRates(); 
-            renderHistory();
-            calculate(); 
-        };
+        window.onload = () => { syncRates(); renderHistory(); calculate(); };
     </script>
 </body>
 </html>
